@@ -1,0 +1,32 @@
+Location,Date,Time,DateTime,Collecter,Type,Purpose,Comment
+Wet Center,10/30/25,3:40:00 AM,10/30/2025 3:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 1
+Wet Center,10/30/25,5:40:00 AM,10/30/2025 5:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 2
+Wet Center,10/30/25,7:40:00 AM,10/30/2025 7:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 3
+Wet Center,10/30/25,9:40:00 AM,10/30/2025 9:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 4
+Wet Center,10/30/25,11:40:00 AM,10/30/2025 11:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 5
+Wet Center,10/30/25,1:40:00 PM,10/30/2025 13:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 6
+Wet Center,10/30/25,3:40:00 PM,10/30/2025 15:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 7
+Wet Center,10/30/25,5:40:00 PM,10/30/2025 17:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 8
+Wet Center,10/30/25,7:40:00 PM,10/30/2025 19:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 9
+Wet Center,10/30/25,9:40:00 PM,10/30/2025 21:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 10
+Wet Center,10/30/25,11:40:00 PM,10/30/2025 23:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 11
+Wet Center,10/31/25,1:40:00 AM,10/31/2025 1:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 12
+Wet Center,10/31/25,3:40:00 AM,10/31/2025 3:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 13
+Wet Center,10/31/25,5:40:00 AM,10/31/2025 5:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 14
+Wet Center,10/31/25,7:40:00 AM,10/31/2025 7:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 15
+Wet Center,10/31/25,9:40:00 AM,10/31/2025 9:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 16
+Wet Center,10/31/25,11:40:00 AM,10/31/2025 11:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 17
+Wet Center,10/31/25,1:40:00 PM,10/31/2025 13:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 18
+Wet Center,10/31/25,3:40:00 PM,10/31/2025 15:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 19
+Wet Center,10/31/25,5:40:00 PM,10/31/2025 17:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 20
+Wet Center,10/31/25,7:40:00 PM,10/31/2025 19:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 21
+Wet Center,10/31/25,9:40:00 PM,10/31/2025 21:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 22
+Wet Center,10/31/25,11:40:00 PM,10/31/2025 23:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 23
+Wet Center,10/31/25,1:40:00 AM,11/1/2025 1:40:00,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 24
+Wet Center,10/31/25,8:49:00 AM,10/31/2025 8:49:00,"ZW, TN",Stream,Baseflow,During storm 16.
+Wet Center,11/03/25,6:00 PM,11/3/2025 18:00:00,"RV, ZW",Stream,Baseflow,After storm 16
+Wet Center,11/04/25,1:26 PM,11/4/2025 13:26:00,"RV, ZW",Stream,Baseflow,"Quick and heavy thunderstorm the night before. ~0.17"" rain"
+Wet Center,11/05/25,2:20 PM,11/5/2025 14:20:00,"RV, XG",Stream,Baseflow,
+Wet Center,11/7/25,8:54:00 AM,11/7/2025 8:54:00,"RV, NA",Stream,Baseflow,
+Wet Center,11/14/25,8:57:00 AM,11/14/2025 8:57:00,RV,Stream,Baseflow,
+Wet Center,11/21/25,6:45:00 AM,11/21/2025 6:45:00,RV,Stream,Baseflow,
