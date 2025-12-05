@@ -20,27 +20,37 @@ S1 <- PFAS_Spatial_Oct_2025 #need dplyr loaded in order to pipe. Don't forget lo
 S1 <- S1 %>%#remove NA's for coordinates
   filter(!is.na(Lat), !is.na(Long))
 
+clean_names <- function(x) {
+  x |>
+    gsub(" ", "_", x = _) |>
+    gsub("[-:]", ".", x = _) |>
+    make.names() |>
+    gsub("^X(\\d)", "\\1", x = _)
+}
+
+colnames(S1) <- clean_names(colnames(S1))
+
 #Naming family groups that I can add together
 pfas_groups <- list(
   PFCA = c("PFBA", "PFPeA", "PFHxA", "PFHpA", "PFOA",
-    "PFNA", "PFDA", "PFUnA", "PFDoA", "PFTrDA", "PFTeDA"),
+           "PFNA", "PFDA", "PFUnA", "PFDoA", "PFTrDA", "PFTeDA"),
   PFSA = c("PFBS", "PFPeS", "PFHxS", "PFHpS", "PFOS",
-    "PFNS", "PFDS", "PFDoS"),
-  FTSA = c("4:2FTS", "6:2FTS", "8:2FTS"),
+           "PFNS", "PFDS", "PFDoS"),
+  FTSA = c("4.2FTS", "6.2FTS", "8.2FTS"),
   PFOSA = c("PFOSA", "NMeFOSA", "NEtFOSA"),
   FOSAA = c("NMeFOSAA", "NEtFOSAA"),
-  PFECA = c("HFPO-DA", "ADONA", "PFMPA", "PFMBA", "NFDHA"),
-  PFESA = c("9Cl-PF3ONS", "11Cl-PF3OUdS", "PFEESA"),
-  FTCA = c("3-3 FTCA", "5-3 FTCA", "7-3 FTCA"))
+  PFECA = c("HFPO.DA", "ADONA", "PFMPA", "PFMBA", "NFDHA"),
+  PFESA = c("9Cl.PF3ONS", "11Cl.PF3OUdS", "PFEESA"),
+  FTCA = c("3.3_FTCA", "5.3_FTCA", "7.3_FTCA"))
 
 #create new columns in dataset with Sum of corresponding species in the family
+# Create new columns in dataset with sum of corresponding species in the family
 S1 <- S1 %>%
   bind_cols(
     lapply(names(pfas_groups), function(fam_name) {
-      
-      # PFBA → "PFBA Results"
-      cols <- paste0(pfas_groups[[fam_name]], " Results")
-      cols_existing <- intersect(cols, names(S1))
+      # Get the column names in S1 for this family
+      cols <- paste0(pfas_groups[[fam_name]], "_Results")
+      cols_existing <- intersect(cols, names(S1))  # only existing columns
       
       tibble(
         !!fam_name := rowSums(S1[cols_existing], na.rm = TRUE)
@@ -50,6 +60,7 @@ S1 <- S1 %>%
 
 S1 <- S1 %>%
   mutate(OBSPRED_ID = row_number())
+
 
 #snapping sites to nearest flowline so it gets the nearest comid
 sites <- st_as_sf(S1,
@@ -88,12 +99,12 @@ streamcat_data_ws <- streamcat_data_ws %>% rename(COMID = comid)
 S1 <- left_join(S1, streamcat_data_ws, by ="COMID") 
 
 cor_results_ws <- S1 %>%
-  select(PFAS40, PFCA, PFSA, `PFOA Results`, connws, npdesdensws, pctimp2019ws, pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws) %>% 
+  select(PFAS40, PFCA, PFSA, PFOA_Results, connws, npdesdensws, pctimp2019ws, pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws) %>% 
   cor(method = "spearman", use = "complete.obs")
 cor_long_ws <- melt(cor_results_ws)
 
 cor_results_Cat <- S1_Cat %>%
-  select(PFAS40, PFCA, PFSA, `PFOA Results`, conncat, npdesdenscat, pctimp2019cat, pcturbhi2019cat, pcturblo2019cat, pcturbmd2019cat, pcturbop2019cat) %>% 
+  select(PFAS40, PFCA, PFSA, PFOA_Results, conncat, npdesdenscat, pctimp2019cat, pcturbhi2019cat, pcturblo2019cat, pcturbmd2019cat, pcturbop2019cat) %>% 
   cor(method = "spearman", use = "complete.obs")
 cor_long_cat <- melt(cor_results_Cat)
 
@@ -112,6 +123,29 @@ pheatmap(cor_results_ws,
          breaks = seq(-1, 1, length.out = 51),
          main = "Spearman Correlation Heatmap watershed scale")
 
+
+cor_results_ws <- S1 %>%
+  select(PFAS40, PFCA, PFSA, PFOA_Results, connws, npdesdensws, pctimp2019ws, 
+         pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws) %>% 
+  cor(method = "spearman", use = "complete.obs")
+
+# Mask lower triangle + diagonal and then melt it
+cor_results_ws[lower.tri(cor_results_ws, diag = TRUE)] <- NA
+cor_long_ws <- melt(cor_results_ws, varnames = c("Variable1", "Variable2"), value.name = "Spearman_r", na.rm = TRUE)
+
+# Reordering Variable2 so labels are aligned with color with tiles
+cor_long_ws$Variable2 <- factor(cor_long_ws$Variable2, levels = rev(unique(cor_long_ws$Variable2)))
+
+# Plot
+ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(Spearman_r, 2)), color = "black", size = 3) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(hjust = 1)
+  )
 
 #keeping pctimp2019ws and npdesdensws
 #percent impervious 2019 and NPDES Density (potential point sources)
@@ -191,6 +225,7 @@ catchment <- sf::read_sf(subset_file, "CatchmentSP")
 waterbody <- sf::read_sf(subset_file, "NHDWaterbody")
 plot(st_geometry(flowline), col = "blue")
 plot(start_point, add = TRUE, col = "red", pch = 19)
+plot(waterbody, add = TRUE, col = "blue")
 #make sure everything is in the same projection. It should be already.
 
 #removed 2 problematic flowlines at atkins reservoir
@@ -357,7 +392,6 @@ ggplot() +
   coord_sf(datum = st_crs(obs)) +
   scale_color_viridis_c()
 
-
 PFAS_ssn <- ssn_assemble(
   edges = edges,
   lsn_path = temp_dir,
@@ -516,7 +550,7 @@ for (compound in pfas_cols) {
 #need to use the lowest AIC and AICc,
 #which in this case comes from ss_mod.
 
-#predict the compound concentration at each edge 
+#predict the compound concentration at each edge aka stream segment
 
 preds <- list()
 for (compound in pfas_cols) {
@@ -544,27 +578,145 @@ for (compound in pfas_cols) {
     rename(!!paste0(compound, "_pred") := pred)
 }
 
-
-#should be something like this
-#"geometry" ".fitted" ".resid" ".hat" ".std.resid"
+#save plots to the working director, in a new foler called out_dir
 out_dir <- "PFAS_maps"
 if (!dir.exists(out_dir)) dir.create(out_dir)
 
+library(ggplot2)
+library(sf)
+library(dplyr)
+library(wesanderson)
+library(rlang)
+library(scales)
+library(broom)
+
+# fixed scale limits
+scale_min <- 0
+scale_max <- 60
+
+# ensure obs_sf is an sf and matches edges CRS (as before)
+if (!inherits(PFAS_ssn$obs, "sf")) {
+  obs_sf <- st_as_sf(PFAS_ssn$obs)
+} else {
+  obs_sf <- PFAS_ssn$obs
+}
+edges_crs <- st_crs(PFAS_pred$edges)
+if (is.na(st_crs(obs_sf)) || st_crs(obs_sf) != edges_crs) {
+  obs_sf <- st_transform(obs_sf, edges_crs)
+}
+if (is.na(st_crs(catchment)) || st_crs(catchment) != edges_crs) {
+  catchment <- st_transform(catchment, edges_crs)
+}
+
+# --- 1) Overview map (blacked out) with combined map key ---
+edges_overview <- PFAS_pred$edges %>% mutate(feature = "Predicted ng/L")
+obs_overview   <- obs_sf %>% mutate(feature = "Observed ng/L")
+
+p_overview <- ggplot() +
+  geom_sf(data = catchment, fill = "grey95", color = "black", size = 0.6) +
+  geom_sf(data = edges_overview, aes(color = feature), linewidth = 0.6, inherit.aes = FALSE) +
+  geom_sf(data = obs_overview, aes(shape = feature, fill = feature), size = 3, stroke = 0.6, inherit.aes = FALSE) +
+  scale_color_manual(name = "Map key",
+                     values = c("Predicted ng/L" = "black"),
+                     guide = guide_legend(order = 1)) +
+  scale_shape_manual(name = "Map key",
+                     values = c("Observed ng/L" = 21),
+                     guide = guide_legend(order = 1)) +
+  scale_fill_manual(name = "Map key",
+                    values = c("Observed ng/L" = "black"),
+                    guide = guide_legend(order = 1)) +
+  labs(title = "Sample sites and stream segments") +
+  theme_classic() +
+  theme(
+    plot.title = element_text(size = 16, hjust = 0.5, face = "bold"),
+    legend.title = element_text(size = 12, face = "bold"),
+    legend.text  = element_text(size = 11)
+  )
+
+ggsave(filename = file.path(out_dir, "overview_map.png"), plot = p_overview,
+       width = 8, height = 6, dpi = 300)
+
+#--- forloop plots for all compounds------------------
+
+# fixed scale limits
+scale_min <- 0
+scale_max <- 60
+
+# ensure obs_sf is an sf and matches edges CRS
+if (!inherits(PFAS_ssn$obs, "sf")) obs_sf <- st_as_sf(PFAS_ssn$obs) else obs_sf <- PFAS_ssn$obs
+edges_crs <- st_crs(PFAS_pred$edges)
+if (is.na(st_crs(obs_sf)) || st_crs(obs_sf) != edges_crs) obs_sf <- st_transform(obs_sf, edges_crs)
+if (is.na(st_crs(catchment)) || st_crs(catchment) != edges_crs) catchment <- st_transform(catchment, edges_crs)
+
+# precompute glance table for R^2 lookup
+glance_df <- map_df(models, glance, .id = "compound")
+
+# palette (dark blue into wes colors)
+pal <- colorRampPalette(c("#012A4A", wes_palette("Zissou1", type = "continuous")))(256)
+
 for (compound in pfas_cols) {
+  if (!compound %in% names(models)) next
   
   pred_col <- paste0(compound, "_pred")
+  obs_col  <- compound
+  
+  # get R^2 or pseudo-R^2
+  r2_val <- glance_df %>%
+    filter(compound == !!compound) %>%
+    { if (nrow(.) == 0) NA_real_ else
+      if ("pseudo.r.squared" %in% names(.)) .$pseudo.r.squared else
+        if ("r.squared" %in% names(.)) .$r.squared else NA_real_ }
+  r2_label <- if (is.na(r2_val)) "R² = NA" else paste0("R\u00B2 = ", format(r2_val, digits = 3))
   
   p <- ggplot() +
-    geom_sf(data = catchment, fill = NA, color = "darkgreen", size = 1)+
+    geom_sf(data = catchment, fill = NA, color = "black", size = 0.6) +
+    
+    # predicted stream segments (continuous color)
     geom_sf(data = PFAS_pred$edges,
             aes(color = !!sym(pred_col)),
-            linewidth = 1) +
-    scale_color_viridis_c(option = "plasma") +
-    labs(
-      title = paste("Predicted", compound),
-      color = "Predicted PFAS"
+            linewidth = 1.5, show.legend = TRUE) +
+    
+    # observed sample points colored by observed values (no extra legend)
+    geom_sf(data = obs_sf,
+            aes(color = !!sym(obs_col)),
+            shape = 21, fill = "white",
+            size = 2, stroke = 2.5,
+            inherit.aes = FALSE,
+            show.legend = FALSE) +
+    
+    # shared continuous colorbar
+    scale_color_gradientn(
+      colors = pal,
+      limits = c(scale_min, scale_max),
+      oob = scales::squish,
+      na.value = "grey80",
+      name = "PFAS (ng/L)",
+      breaks = c(0, 1, 5, 10, 20, 40, 60),
+      labels = scales::number_format(accuracy = 1.0),
+      trans = "sqrt"
     ) +
-    theme_minimal()
+    
+    guides(color = guide_colorbar(
+      barwidth  = grid::unit(0.6, "cm"),
+      barheight = grid::unit(6, "cm"),
+      label.theme = element_text(size = 12),
+      title.theme = element_text(size = 13, face = "bold"),
+      title.position = "top"
+    )) +
+    
+    labs(title = paste("Predicted", compound), subtitle = r2_label) +
+    
+    theme_classic() +
+    theme(
+      plot.title    = element_text(size = 18, face = "bold", hjust = 0.5),
+      plot.subtitle = element_text(size = 12, hjust = 0.5),
+      axis.title    = element_text(size = 12),
+      axis.text     = element_text(size = 11),
+      legend.title  = element_text(size = 13, face = "bold"),
+      legend.text   = element_text(size = 12),
+      legend.position = "right",
+      plot.margin = margin(t = 6, r = 6, b = 6, l = 6)
+    )
   
   ggsave(
     filename = file.path(out_dir, paste0(compound, "_map.png")),
@@ -572,3 +724,74 @@ for (compound in pfas_cols) {
     width = 8, height = 6, dpi = 300
   )
 }
+
+
+#this next step reports all your models back to you
+
+coeffs_df <- map_df(models, ~tidy(.x), .id = "compound")
+glance_df <- map_df(models, glance, .id = "compound")
+full_model_summary <- coeffs_df %>%
+  left_join(glance_df, by = "compound") %>%
+  select(compound, term, estimate, std.error, p.value,
+         n, p, npar, value, AIC, AICc, logLik, deviance, pseudo.r.squared)
+full_model_summary
+
+
+#not standardized, so coefficient values are all over the place.
+standardize_ssn_coefs <- function(model, data, response) {
+  # raw coefficients
+  raw_coefs <- coef(model)
+  
+  # get SD of response
+  sd_y <- sd(data[[response]], na.rm = TRUE)
+  
+  # predictors (exclude intercept)
+  preds <- names(raw_coefs)[names(raw_coefs) != "(Intercept)"]
+  
+  # compute standardized coefs for predictors
+  std_coefs <- sapply(preds, function(p) {
+    sd_x <- sd(data[[p]], na.rm = TRUE)
+    raw_coefs[p] * (sd_x / sd_y)
+  })
+  
+  # return intercept + standardized coefs
+  c("(Intercept)" = raw_coefs["(Intercept)"], std_coefs)
+}
+std_coef_list <- list()
+
+for (compound in pfas_cols) {
+  std_coef_list[[compound]] <- standardize_ssn_coefs(
+    model = models[[compound]],
+    data  = PFAS_ssn$obs,
+    response = compound
+  )
+}
+std_coef_df <- bind_rows(lapply(names(std_coef_list), function(comp) {
+  tibble(
+    compound = comp,
+    predictor = names(std_coef_list[[comp]])[-1],   # drop intercept
+    std_coef = as.numeric(std_coef_list[[comp]][-1])
+  )
+}))
+
+ggplot(std_coef_df, aes(x = predictor, y = compound, fill = std_coef)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(
+    midpoint = 0,
+    low = "blue",
+    high = "red",
+    mid = "white"
+  ) +
+  labs(
+    title = "Standardized Coefficients for PFAS Models",
+    x = "Predictor",
+    y = "Compound",
+    fill = "Std. Coef"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.text.y = element_text(size = 8)
+  )
+
+
