@@ -1,9 +1,30 @@
+
+#Raul Vera
+#Created Nov 2025
+#Last updated: December 17th
+
+#Hello and welcome to my PFAS SSN model
+#this script models 17 PFAS stream observatios from Amherst
+#Spatial 1 corresponds to October 12th sampling 
+
+#first, set your working directory. This is where your files will be saved
+#getwd = current working directory/folder. 
+getwd
+#if you like this location, then leave as is.
+#If you want to change the folder, use setwd
+setwd("~/Soil&Water lab/Spatial Stream Networks/LWMR Isoscape")
+#you can put whatever folder makes sense for you. 
+#the location doesn't matter, it's just where final plots will be added to.
+#you don't need to download any data before hand. 
+
+
+#download all of these packages and then load
 library(remotes)
 library(StreamCatTools)
 library(dplyr)
-library(readr) #bring in the spatial coordinates with coresponding PFAS data
+library(readr) 
 library(sf)
-library(nhdplusTools) #pulling in flowlines and associated COMIDS
+library(nhdplusTools) #pulls in flowlines and associated COMIDS
 library(SSN2)
 library(SSNbler)
 library(writexl)
@@ -13,6 +34,7 @@ library(pheatmap)
 library(ggplot2)
 library(viridis)
 library(stringr)
+library(nngeo)
 
 PFAS_Spatial_Oct_2025 <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/Spatial_1_PFASResults.csv")
 S1 <- PFAS_Spatial_Oct_2025 #need dplyr loaded in order to pipe. Don't forget lol
@@ -20,6 +42,7 @@ S1 <- PFAS_Spatial_Oct_2025 #need dplyr loaded in order to pipe. Don't forget lo
 S1 <- S1 %>%#remove NA's for coordinates
   filter(!is.na(Lat), !is.na(Long))
 
+#these changes the name of some of the headers for easier manipulation later
 clean_names <- function(x) {
   x |>
     gsub(" ", "_", x = _) |>
@@ -30,7 +53,7 @@ clean_names <- function(x) {
 
 colnames(S1) <- clean_names(colnames(S1))
 
-#Naming family groups that I can add together
+#Naming functional head groups that I can add together later
 pfas_groups <- list(
   PFCA = c("PFBA", "PFPeA", "PFHxA", "PFHpA", "PFOA",
            "PFNA", "PFDA", "PFUnA", "PFDoA", "PFTrDA", "PFTeDA"),
@@ -77,18 +100,21 @@ S1$COMID <- as.numeric(idx$COMID) #comid ID for each point! Don't need to use id
 
 # (use StreamCatTools documentation for metric names) 
 #https://www.epa.gov/national-aquatic-resource-surveys/streamcat-metrics-and-definitions
+#this next step runs your sites through the StreamCAt database, and returns information for your metrics of interest
+#there are two AOI's you can choose. 
+#Choose wisely...
 streamcat_data_cat <- sc_get_data( comid = S1$COMID, 
                                metric = c("conn", "npdesdens", "pctimp2019",
                                           "pcturbhi2019", "pcturblo2019",
                                           "pcturbmd2019", "pcturbop2019",
                                           "huden2010", "rdcrs"),
-                               aoi = "Cat" ) #area of interst, whole watershed
+                               aoi = "Cat" ) #area of interst, imediate stream segment 
 streamcat_data_ws <- sc_get_data( comid = S1$COMID, 
                                metric = c("conn", "npdesdens", "pctimp2019",
                                           "pcturbhi2019", "pcturblo2019",
                                           "pcturbmd2019", "pcturbop2019",
                                           "huden2010", "rdcrs"),
-                               aoi = "ws" ) #area of interst, whole watershed
+                               aoi = "ws" ) #area of interst, imediate stream segmetn and everything upstream of it
 
 #renaming since there was a name conversion using sc_get_data
 streamcat_data_cat <- streamcat_data_cat %>% rename(COMID = comid)
@@ -147,52 +173,15 @@ ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
     axis.text.y = element_text(hjust = 1)
   )
 
-#keeping pctimp2019ws and npdesdensws
+# I'm keeping pctimp2019ws and npdesdensws
 #percent impervious 2019 and NPDES Density (potential point sources)
 #https://www.epa.gov/npdes
-#maybeee including connws after the model is built
+#this was done based on decently ok corelation coeffictions, and my own intuition 
+#based on the literature and common sense
 
-#I'm going to go with PFOA
-#okay, now get the same two covariates for my prediction points. 
 
-#Prediction_Points <- read_csv("~/Soil&Water lab/Spatial Stream Networks/LWMR Isoscape/Prediction_Points.csv")
-#head(Prediction_Points)
-
-#pred_streamcat <- sc_get_data(
-#  comid = Prediction_Points$COMID,
-#  metric = c("conn", "npdesdens", "pctimp2019", "pcturblo2019"),
-#  aoi = "ws")
-#pred_streamcat <- pred_streamcat %>%
-#  rename(COMID = comid)
-
-#Prediction_Points <- left_join(Prediction_Points, pred_streamcat, by = "COMID")
-
-#write_xlsx(Prediction_Points, "Prediction_CovariatesAdded.xlsx")
-#write_xlsx(S1, "Observation_CovariatesAdded.xlsx")
-
-#went to arcgis and created the following set up file in order to be 
-#able to run the model and create the SSN object
-#S1_ready <- S1 %>% mutate(Type = "Observation")
-#Prediction_ready <- Prediction_Points %>% mutate(Type = "Prediction")
-
-# Combine them
-#ObservationsPredictionsMerged <- bind_rows(S1_ready, Prediction_ready)
-
-#write_xlsx(ObservationsPredictionsMerged,
-#  "~/Soil&Water lab/Spatial Stream Networks/ObservationsPredictionsMerged.xlsx")
-#View(ObservationsPredictionsMerged)
-
-#ObservationsPredictionsMerged <- read_csv("~/Soil&Water lab/Spatial Stream Networks/ObservationsPredictionsMerged.csv")
-#View(ObservationsPredictionsMerged)
-# this is the data I'm working with just to see. The data is actually in arcgis as a shapefile
-
-setwd("~/Soil&Water lab/Spatial Stream Networks/LWMR Isoscape")
-#you can put whatever folder makes sense for you. 
-#the location doesn't matter, it's just where final plots will be added to.
-#you don't need to download any data before hand. 
-
-#-------Using NHDPlus data set from R package ------------------
-#Starting over using !
+#-------Using the NHDPlus data set from R package ------------------
+#Starting over using following coordinates!
 #42.38344445112979, -72.5837008452757
 #coordinates at the lake warner outlet.
 
@@ -204,13 +193,15 @@ start_comid
 flowline <- navigate_nldi(
   list(featureSource = "comid", featureID = start_comid),
   mode = "upstreamTributaries",
-  distance_km = 200)
+  distance_km = 200) #goes 200km upstream from starting point
+#this will be increased for larger watershed in the future
 
-#save the flowlines
+#save the flowlines 
 subset_file <- "LWMR_nhd_subset.gpkg"
 
 #this can take a while. 
-#Occasionally the NHDplus website is down, so it won't work at a given moment. 
+#Occasionally the NHDplus website is down, so it won't work at a given moment.
+#just give it an hour and it will be back up, usually...
 subset <- subset_nhdplus(
   comids = as.integer(flowline$UT$nhdplus_comid),
   output_file = subset_file,
@@ -240,7 +231,7 @@ nsi_PredPoints_clipped <- flowline %>%
 plot(st_geometry(flowline), col = "blue")
 plot(start_point, add = TRUE, col = "red", pch = 19)
 plot(st_geometry(nsi_PredPoints_clipped), add = TRUE, col = "red", pch = 19, cex = 1)
-#flowlines are in!!
+#flowlines and prediction points are in!!
 
 # Convert S1 to an sf object using Lat/Long
 S1_sf <- st_as_sf(S1, 
@@ -257,7 +248,7 @@ plot(st_geometry(S1_sf), add = TRUE)
 # Save as shapefile
 st_write(S1_sf, "obs.gpkg", delete_layer = TRUE)
 
-#error is due to time and name of a column. 
+#warning message is due to time and name of a column. 
 #it's still was created, so don't worry about it 
 
 
@@ -279,10 +270,8 @@ catchment_union <- st_union(catchment_valid) #combining by subcatchments
 obs <- st_read("obs.gpkg")  
 obs <- st_transform(obs, st_crs(flowline))
 obs_clip <- obs[st_within(obs, catchment_union, sparse = FALSE), ]
-#obs_clip <- obs_clip %>%
-#  rename(TotDASqKM = TtDASKM)%>%
-#  rename(npdesdensws = npdsdns)%>%
-#  rename(pctimp2019ws = pct2019)
+#st_write(obs_clip, "obs_clip.gpkg", delete_dsn = TRUE)
+
 
 plot(st_geometry(flowline), col = "blue")
 #plot(st_geometry(catchment), add = TRUE, border = "darkgreen", lwd = 2)
@@ -292,6 +281,7 @@ plot(st_geometry(obs), add = TRUE, col = "blue", pch = 19)
 #plot(st_geometry(obs_clip), add = TRUE, col = "blue", pch = 19)
 
 #giving Prediction points obspred ID numbers and a PFAS40 row
+#predictions have obspred_ID starting at 100,000. That's just the standard
 nsi_PredPoints_clipped <- nsi_PredPoints_clipped %>% 
   mutate(
     OBSPRED = row_number() + 100000)
@@ -307,7 +297,7 @@ nsi_PredPoints_clipped <- left_join(nsi_PredPoints_clipped, streamcat_data, by =
 nsi_PredPoints_clipped <- nsi_PredPoints_clipped %>%
   select(OBSPRED, comid, totdasqkm, npdesdensws, pctimp2019ws, geom)
 
-#renaming obs_clip into obs
+#renaming obs_clip into obs with different CRS (in meters)
 flowline <- st_transform(flowline, crs =5070)
 obs <- st_transform(obs_clip, crs =5070)
 pred <- st_transform(nsi_PredPoints_clipped, crs =5070)
@@ -323,6 +313,9 @@ plot(st_geometry(pred), add = TRUE, col = "red", pch = 19)
 
 temp_dir <- "C:/Users/Ruli's computer/OneDrive/Documents/Soil&Water lab/Spatial Stream Networks/LWMR Isoscape"
 #change this to somewhere on your computer that makes sense.
+
+
+#-----DON't Change ANyThing HERE!!--------------
 dir.create(temp_dir, showWarnings = FALSE)
 library(sf)
 
@@ -383,6 +376,7 @@ site.list <- afv_sites(
   save_local = TRUE,
   lsn_path = temp_dir)
 
+####-------Okay now you are allowed to change things----------------
 names(site.list$preds) ## View column names in pred1km
 names(edges) ## Look at edges column names
 
@@ -443,19 +437,7 @@ library(SSN2)
 ## Generate hydrologic distance matrices
 ssn_create_distmat(PFAS_ssn)
 
-
-#don't fit for now!
-## Fit the model
-#PFAS40_mod <- ssn_lm(
-#  formula = PFAS40 ~ npdesdensws + pctimp2019ws,
-#  ssn.object = PFAS_ssn,
-#  tailup_type = "exponential",
-#  euclid_type = "gaussian",
-#  additive = "afvArea")
-
-#fitted ssn model statistics
-#summary(PFAS40_mod)
-#varcomp(PFAS40_mod)  #nugget is what is not being explained by the covariates
+#nugget is what is not being explained by the covariates
 
 #making a copy to a temporary directory so I'm not editing original ssn
 path <- system.file("temp_dir/PFAS.ssn", package = "SSN2")
@@ -536,20 +518,6 @@ for (compound in pfas_cols) {
 }
 
 
-
-
-#comparing multiple mods and the original
-
-#glances(PFAS40_mod, PFCA_mod, PFSA_mod, PFOA_mod)
-#tidy(PFCA_mod, conf.int = TRUE)
-#glance(PFCA_mod)
-#logLik is the log likelihood
-#plot(PFCA_mod, which = 1)
-
-#PFOA is the best! 
-#need to use the lowest AIC and AICc,
-#which in this case comes from ss_mod.
-
 #predict the compound concentration at each edge aka stream segment
 
 preds <- list()
@@ -590,9 +558,6 @@ library(rlang)
 library(scales)
 library(broom)
 
-# fixed scale limits
-scale_min <- 0
-scale_max <- 60
 
 # ensure obs_sf is an sf and matches edges CRS (as before)
 if (!inherits(PFAS_ssn$obs, "sf")) {
@@ -632,6 +597,7 @@ p_overview <- ggplot() +
     legend.title = element_text(size = 12, face = "bold"),
     legend.text  = element_text(size = 11)
   )
+p_overview 
 
 ggsave(filename = file.path(out_dir, "overview_map.png"), plot = p_overview,
        width = 8, height = 6, dpi = 300)
@@ -640,7 +606,8 @@ ggsave(filename = file.path(out_dir, "overview_map.png"), plot = p_overview,
 
 # fixed scale limits
 scale_min <- 0
-scale_max <- 60
+scale_max <- 60 #this is the maximum concentration predicted and observed. 
+#edit the max if needed in future model creations
 
 # ensure obs_sf is an sf and matches edges CRS
 if (!inherits(PFAS_ssn$obs, "sf")) obs_sf <- st_as_sf(PFAS_ssn$obs) else obs_sf <- PFAS_ssn$obs
@@ -648,10 +615,9 @@ edges_crs <- st_crs(PFAS_pred$edges)
 if (is.na(st_crs(obs_sf)) || st_crs(obs_sf) != edges_crs) obs_sf <- st_transform(obs_sf, edges_crs)
 if (is.na(st_crs(catchment)) || st_crs(catchment) != edges_crs) catchment <- st_transform(catchment, edges_crs)
 
-# precompute glance table for R^2 lookup
-glance_df <- map_df(models, glance, .id = "compound")
+glance_df <- map_df(models, glance, .id = "compound") # precompute glance table for R^2 lookup
 
-# palette (dark blue into wes colors)
+# this is the colour palette for legend (dark blue and wes anderson colors)
 pal <- colorRampPalette(c("#012A4A", wes_palette("Zissou1", type = "continuous")))(256)
 
 for (compound in pfas_cols) {
@@ -660,8 +626,7 @@ for (compound in pfas_cols) {
   pred_col <- paste0(compound, "_pred")
   obs_col  <- compound
   
-  # get R^2 or pseudo-R^2
-  r2_val <- glance_df %>%
+  r2_val <- glance_df %>% # get R^2 or pseudo-R^2
     filter(compound == !!compound) %>%
     { if (nrow(.) == 0) NA_real_ else
       if ("pseudo.r.squared" %in% names(.)) .$pseudo.r.squared else
@@ -670,13 +635,11 @@ for (compound in pfas_cols) {
   
   p <- ggplot() +
     geom_sf(data = catchment, fill = NA, color = "black", size = 0.6) +
-    
     # predicted stream segments (continuous color)
     geom_sf(data = PFAS_pred$edges,
             aes(color = !!sym(pred_col)),
             linewidth = 1.5, show.legend = TRUE) +
-    
-    # observed sample points colored by observed values (no extra legend)
+    # sample locations colored by observed values
     geom_sf(data = obs_sf,
             aes(color = !!sym(obs_col)),
             shape = 21, fill = "white",
@@ -684,7 +647,7 @@ for (compound in pfas_cols) {
             inherit.aes = FALSE,
             show.legend = FALSE) +
     
-    # shared continuous colorbar
+    #continuous colorbar for all plots
     scale_color_gradientn(
       colors = pal,
       limits = c(scale_min, scale_max),
@@ -693,16 +656,14 @@ for (compound in pfas_cols) {
       name = "PFAS (ng/L)",
       breaks = c(0, 1, 5, 10, 20, 40, 60),
       labels = scales::number_format(accuracy = 1.0),
-      trans = "sqrt"
-    ) +
+      trans = "sqrt") +
     
     guides(color = guide_colorbar(
       barwidth  = grid::unit(0.6, "cm"),
       barheight = grid::unit(6, "cm"),
       label.theme = element_text(size = 12),
       title.theme = element_text(size = 13, face = "bold"),
-      title.position = "top"
-    )) +
+      title.position = "top" )) +
     
     labs(title = paste("Predicted", compound), subtitle = r2_label) +
     
@@ -715,8 +676,7 @@ for (compound in pfas_cols) {
       legend.title  = element_text(size = 13, face = "bold"),
       legend.text   = element_text(size = 12),
       legend.position = "right",
-      plot.margin = margin(t = 6, r = 6, b = 6, l = 6)
-    )
+      plot.margin = margin(t = 6, r = 6, b = 6, l = 6))
   
   ggsave(
     filename = file.path(out_dir, paste0(compound, "_map.png")),
@@ -725,9 +685,8 @@ for (compound in pfas_cols) {
   )
 }
 
-
-#this next step reports all your models back to you
-
+p
+#this next step reports all your model summaries back to you
 coeffs_df <- map_df(models, ~tidy(.x), .id = "compound")
 glance_df <- map_df(models, glance, .id = "compound")
 full_model_summary <- coeffs_df %>%
@@ -735,26 +694,27 @@ full_model_summary <- coeffs_df %>%
   select(compound, term, estimate, std.error, p.value,
          n, p, npar, value, AIC, AICc, logLik, deviance, pseudo.r.squared)
 full_model_summary
-
+#for comparing multiple mods. You don't need to worry about this, these are notes to self
+#glances(PFAS40_mod, PFCA_mod, PFSA_mod, PFOA_mod)
+#tidy(PFCA_mod, conf.int = TRUE)
+#glance(PFCA_mod)
+#logLik is the log likelihood
+#plot(PFCA_mod, which = 1)
+#need to use the lowest AIC and AICc,
 
 #not standardized, so coefficient values are all over the place.
+#this next step will standardize everything.
 standardize_ssn_coefs <- function(model, data, response) {
-  # raw coefficients
-  raw_coefs <- coef(model)
+  raw_coefs <- coef(model) # raw coefficients numbers
+  sd_y <- sd(data[[response]], na.rm = TRUE)  # get SD of response
+  preds <- names(raw_coefs)[names(raw_coefs) != "(Intercept)"]  # predictors (exclude intercept)
   
-  # get SD of response
-  sd_y <- sd(data[[response]], na.rm = TRUE)
-  
-  # predictors (exclude intercept)
-  preds <- names(raw_coefs)[names(raw_coefs) != "(Intercept)"]
-  
-  # compute standardized coefs for predictors
+  #Now you standardize the coefs for predictors
   std_coefs <- sapply(preds, function(p) {
     sd_x <- sd(data[[p]], na.rm = TRUE)
     raw_coefs[p] * (sd_x / sd_y)
   })
-  
-  # return intercept + standardized coefs
+  # return the intercept + standardized coefs
   c("(Intercept)" = raw_coefs["(Intercept)"], std_coefs)
 }
 std_coef_list <- list()
@@ -766,12 +726,12 @@ for (compound in pfas_cols) {
     response = compound
   )
 }
+
 std_coef_df <- bind_rows(lapply(names(std_coef_list), function(comp) {
   tibble(
     compound = comp,
     predictor = names(std_coef_list[[comp]])[-1],   # drop intercept
-    std_coef = as.numeric(std_coef_list[[comp]][-1])
-  )
+    std_coef = as.numeric(std_coef_list[[comp]][-1]))
 }))
 
 ggplot(std_coef_df, aes(x = predictor, y = compound, fill = std_coef)) +
@@ -784,8 +744,8 @@ ggplot(std_coef_df, aes(x = predictor, y = compound, fill = std_coef)) +
   ) +
   labs(
     title = "Standardized Coefficients for PFAS Models",
-    x = "Predictor",
-    y = "Compound",
+    x = "Predictor Metric",
+    y = "Modeled Compound",
     fill = "Std. Coef"
   ) +
   theme_minimal() +
@@ -794,4 +754,53 @@ ggplot(std_coef_df, aes(x = predictor, y = compound, fill = std_coef)) +
     axis.text.y = element_text(size = 8)
   )
 
+
+
+#That's alot of models, so i'll make a heat map for only a few that would be interesting in talking about
+#want_comps are the compounds or families to put on the figure. 
+want_comps <- c("PFCA", "PFSA")
+
+# renaming the prediction labels for easier readibility
+pred_labels <- c(
+  npdesdensws   = "NDPES Density",
+  pctimp2019ws  = "Percent Impervious")
+
+# preparing plotting dataframe
+plot_df <- std_coef_df %>%
+  filter(compound %in% want_comps) %>%
+  mutate(
+    predictor = as.character(predictor),
+    predictor = sub("^([^\\.]+)\\..*$", "\\1", predictor),
+    compound = factor(compound, levels = want_comps)
+  ) %>%
+  mutate(
+    predictor_label = ifelse(predictor %in% names(pred_labels),
+                             pred_labels[predictor],
+                             predictor),
+    predictor_label = factor(predictor_label, levels = unique(predictor_label)),
+    label = sprintf("%.2f", std_coef),
+    text_color = ifelse(abs(std_coef) > 0.5, "white", "black")
+    #text_color will update based on color of the background tile
+  )
+
+# plot tiles with numeric labels on top
+ggplot(plot_df, aes(x = predictor_label, y = compound, fill = std_coef)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = label, color = text_color), size = 10) +
+  scale_color_identity() +
+  scale_fill_gradient2(
+    low = "red", mid = "white", high = "blue",
+    midpoint = 0,
+    limits = c(-1, 1),
+    oob = scales::squish,
+    name = "Std coef") +
+  labs(title = "Standardized
+model coefficients",
+       x = "Predictor metric", y = "Modeled Compound(s)") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 22),
+    axis.text.y = element_text(size = 22),
+    plot.title = element_text(size = 25, face = "bold", hjust=0.5)
+  )
 
