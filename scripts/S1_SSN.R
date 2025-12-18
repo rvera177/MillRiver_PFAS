@@ -9,7 +9,7 @@
 
 #first, set your working directory. This is where your files will be saved
 #getwd = current working directory/folder. 
-getwd
+getwd()
 #if you like this location, then leave as is.
 #If you want to change the folder, use setwd
 setwd("~/Soil&Water lab/Spatial Stream Networks/LWMR Isoscape")
