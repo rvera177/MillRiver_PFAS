@@ -66,8 +66,7 @@ pfas_groups <- list(
   PFESA = c("9Cl.PF3ONS", "11Cl.PF3OUdS", "PFEESA"),
   FTCA = c("3.3_FTCA", "5.3_FTCA", "7.3_FTCA"))
 
-#create new columns in dataset with Sum of corresponding species in the family
-# Create new columns in dataset with sum of corresponding species in the family
+#create new columns in S1 with the sum of corresponding species in the family
 S1 <- S1 %>%
   bind_cols(
     lapply(names(pfas_groups), function(fam_name) {
@@ -174,7 +173,7 @@ ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
   )
 
 # I'm keeping pctimp2019ws and npdesdensws
-#percent impervious 2019 and NPDES Density (potential point sources)
+#percent impervious 2019 (non-point sources) and NPDES Density (potential point sources)
 #https://www.epa.gov/npdes
 #this was done based on decently ok corelation coeffictions, and my own intuition 
 #based on the literature and common sense
@@ -609,7 +608,7 @@ scale_min <- 0
 scale_max <- 60 #this is the maximum concentration predicted and observed. 
 #edit the max if needed in future model creations
 
-# ensure obs_sf is an sf and matches edges CRS
+# make sure obs_sf is an sf and matches edges CRS
 if (!inherits(PFAS_ssn$obs, "sf")) obs_sf <- st_as_sf(PFAS_ssn$obs) else obs_sf <- PFAS_ssn$obs
 edges_crs <- st_crs(PFAS_pred$edges)
 if (is.na(st_crs(obs_sf)) || st_crs(obs_sf) != edges_crs) obs_sf <- st_transform(obs_sf, edges_crs)
@@ -765,7 +764,7 @@ pred_labels <- c(
   npdesdensws   = "NDPES Density",
   pctimp2019ws  = "Percent Impervious")
 
-# preparing plotting dataframe
+# preparing plotting set up
 plot_df <- std_coef_df %>%
   filter(compound %in% want_comps) %>%
   mutate(
@@ -783,7 +782,7 @@ plot_df <- std_coef_df %>%
     #text_color will update based on color of the background tile
   )
 
-# plot tiles with numeric labels on top
+# plotting coefficient tiles with labels on top
 ggplot(plot_df, aes(x = predictor_label, y = compound, fill = std_coef)) +
   geom_tile(color = "white") +
   geom_text(aes(label = label, color = text_color), size = 10) +
