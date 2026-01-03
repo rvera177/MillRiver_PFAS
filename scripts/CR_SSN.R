@@ -80,6 +80,7 @@ flines <- get_nhdplus(AOI = bb_sf, realization = "flowline") #Download flowlines
 idx <- get_flowline_index(flines, sites, max_matches = 1) #Snap points to nearest flowline & get COMID
 S1$COMID <- as.numeric(idx$COMID) #comid ID for each point! Don't need to use idx anymore.
 
+###------Exploring the existing data --------------
 # (use StreamCatTools documentation for metric names) 
 #https://www.epa.gov/national-aquatic-resource-surveys/streamcat-metrics-and-definitions
 streamcat_data_cat <- sc_get_data( comid = S1$COMID, 
@@ -152,13 +153,14 @@ ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
     axis.text.y = element_text(hjust = 1)
   )
 
-
-#-------Using NHDPlus data set from R package ------------------
+#--------Setting up flowpaths for SSN-----------------------
+#Using NHDPlus data set from R package
 #Starting over using !
 #42.38344445112979, -72.5837008452757
 #coordinates at the lake warner outlet.
 
-#changed to Connecticut River!!42.32282498260607, -72.584448519828
+#changed to Connecticut River!! By the Noho bridge
+#42.32282498260607, -72.584448519828
 start_point <- st_sfc(st_point(c(-72.584448519828, 42.32282498260607)), crs = 4269)
 start_comid <- discover_nhdplus_id(start_point)
 start_comid
@@ -251,7 +253,6 @@ plot(st_geometry(catchment), add = TRUE, border = "darkgreen", lwd = 2)
 plot(st_geometry(catchment_union), add = TRUE, border = "black", lwd = 4)
 plot(st_geometry(nsi_PredPoints_clipped), add = TRUE, col = "red", pch = 19)
 plot(st_geometry(obs), add = TRUE, col = "blue", pch = 19)
-#plot(st_geometry(obs_clip), add = TRUE, col = "blue", pch = 19)
 
 #giving Prediction points obspred ID numbers
 nsi_PredPoints_clipped <- nsi_PredPoints_clipped %>% 
@@ -293,6 +294,11 @@ ssn_path <- file.path(temp_dir, "CR_model.ssn")
 flowlines_2 = lines_to_lsn(flowline, 
                            lsn_path = temp_dir,
                            overwrite = TRUE)
+
+#if you get any topology errors, follow next step.
+#Otherwise, skip and move on to SSN Assemble stage
+
+#------------Node Error Correction-----------------
 node_errors = st_read("node_errors.gpkg")  
 plot(st_geometry(node_errors), add = TRUE, col = "black", pch = 19)
 
@@ -311,13 +317,16 @@ print(layers_info)
 layer_names <- layers_info$name
 print(layer_names)
 
-#readthe flowlines (use the layer name listed by st_layers; "flowline_corrected")
+#read the flowlines (use the layer name listed by st_layers; "flowline_corrected")
 flowline <- sf::st_read(dsn =flowpathfixed, layer = "flowline_corrected", quiet = FALSE)
 
+#---------Assemble the SSN-----------------
 #Run again!!
+
 flowlines_2 = lines_to_lsn(flowline, 
                            lsn_path = temp_dir,
                            overwrite = TRUE)
+
 #For this catchment, the furthest observation from flowline is 138 meters
 #i put snap tolerence to 150m
 obs <- sites_to_lsn(
@@ -336,7 +345,7 @@ preds <- sites_to_lsn(
   save_local = TRUE,
   lsn_path = temp_dir,
   file_name = "nsi_PredPoints_clipped",
-  snap_tolerance = 300,
+  snap_tolerance = 350,
   overwrite = TRUE)
 #yes
 edges <- updist_edges(
@@ -390,18 +399,12 @@ CR_ssn <- ssn_assemble(
   afv_col = "afvArea",
   overwrite = TRUE
 )
+#SSN assembled. Great!
 
-#SSN created. Great!
-# Plotting nodes for reference if you want
-#nodes <- st_read(file.path(temp_dir, "nodes.gpkg"))
-#nodes_proj <- st_transform(nodes, st_crs(flowline))
-#plot(st_geometry(nodes_proj), add = TRUE, col = "black", pch = 19)
-#text(st_coordinates(nodes_proj), labels = nodes_proj$pointid, pos = 3, cex = 0.7)
-# In case you get a node_erros notification, plot them. 
-#plot(st_geometry(node_errors), add=TRUE, col = "blue")
+#-----------SSN Prediction------------
+library(SSN2)
 
-
-#plotting SSN
+#plotting base SSN
 ggplot() +
   geom_sf(
     data = CR_ssn$edges,
@@ -425,7 +428,7 @@ ggplot() +
     legend.text = element_text(size = 8),
     legend.title = element_text(size = 10))
 
-#plotting SSN
+#plotting SSN without the prediction points
 ggplot() +
   geom_sf(
     data = CR_ssn$edges,
@@ -443,24 +446,8 @@ ggplot() +
     legend.text = element_text(size = 8),
     legend.title = element_text(size = 10))
 
-library(SSN2)
-
 ## Generate hydrologic distance matrices
 ssn_create_distmat(CR_ssn)
-
-
-#don't fit for now!
-## Fit the model
-#PFAS40_mod <- ssn_lm(
-#  formula = PFAS40 ~ npdesdensws + pctimp2019ws,
-#  ssn.object = PFAS_ssn,
-#  tailup_type = "exponential",
-#  euclid_type = "gaussian",
-#  additive = "afvArea")
-
-#fitted ssn model statistics
-#summary(PFAS40_mod)
-#varcomp(PFAS40_mod)  #nugget is what is not being explained by the covariates
 
 #making a copy to a temporary directory so I'm not editing original ssn
 path <- system.file("temp_dir/CR.ssn", package = "SSN2")
@@ -501,15 +488,14 @@ Togregram <- Torgegram(
 )
 plot(Togregram)
 
-#quick modification of an ssn including tail down
 #name the columns you want models for!
 # get all column names
 all_cols <- names(CR_ssn$obs)
 #view(all_cols)
-# find the positions of the start and end columns 
-# that you want to make models for
+# find the positions of the start and end columns that you want to make models for
 start <- match("PFAS40", all_cols)
 end   <- match("FTCA", all_cols)
+#might have to change this "end" if having issues
 # subset the column names
 pfas_cols <- all_cols[start:end]
 pfas_cols
@@ -538,9 +524,6 @@ for (compound in pfas_cols) {
     euclid_type = "gaussian",
     additive = "afvArea")
 }
-
-
-
 
 #comparing multiple mods and the original
 
@@ -582,7 +565,7 @@ for (compound in pfas_cols) {
     rename(!!paste0(compound, "_pred") := pred)
 }
 
-#save plots to the working director, in a new foler called out_dir
+#save plots to the working director, in a new folder called out_dir
 out_dir <- "CR_PFAS_maps"
 if (!dir.exists(out_dir)) dir.create(out_dir)
 
@@ -656,7 +639,7 @@ if (is.na(st_crs(catchment)) || st_crs(catchment) != edges_crs) catchment <- st_
 glance_df <- map_df(models, glance, .id = "compound")
 
 # palette (dark blue into wes colors)
-pal <- colorRampPalette(c("#012A4A", wes_palette("Zissou1", type = "continuous")))(256)
+pal <- colorRampPalette(c("#012A4A", wes_palette("Zissou1", type = "continuous"), "#8B0000"))(256)
 
 for (compound in pfas_cols) {
   if (!compound %in% names(models)) next
@@ -692,7 +675,7 @@ for (compound in pfas_cols) {
       colors = pal,
       limits = c(scale_min, scale_max),
       oob = scales::squish,
-      na.value = "grey80",
+      na.value = "grey20",
       name = "PFAS (ng/L)",
       breaks = c(0, 1, 5, 10, 20, 40, 60),
       labels = scales::number_format(accuracy = 1.0),
@@ -727,7 +710,10 @@ for (compound in pfas_cols) {
     width = 8, height = 6, dpi = 300
   )
 }
+# Plots are created for all of your compounds. Check out your folder!!
 
+
+#---------Summaries and Post Analysis------------------
 
 #this next step reports all your models back to you
 
