@@ -1,3 +1,9 @@
+
+#Connecticut River SSN model for PFAS compounds
+#created in December 2025 - RV
+#updated on 1/6/26 - RV
+
+
 library(remotes)
 library(StreamCatTools)
 library(dplyr)
@@ -239,10 +245,10 @@ st_write(S1_sf, "obs.gpkg", delete_layer = TRUE)
 #it's still was created, so don't worry about it 
 
 
-
-library(nngeo)  # for snapping
+#library(nngeo)  # for snapping, but not really needed anymore
 catchment_valid <- st_make_valid(catchment)
-catchment_union <- st_union(catchment_valid) #combining by subcatchments
+catchment_union <- st_union(catchment_valid) #combining by subcatchments.
+#catchment_union isn't really needed anymore. I should remove this later
 
 obs <- st_read("obs.gpkg")  
 obs <- st_transform(obs, st_crs(flowline))
@@ -327,7 +333,8 @@ flowlines_2 = lines_to_lsn(flowline,
                            lsn_path = temp_dir,
                            overwrite = TRUE)
 
-#For this catchment, the furthest observation from flowline is 138 meters
+#For LWMR catchment, the furthest observation from flowline is 138 meters
+#This is at the Leverett Pond. I took the water sample at the opposite end of the pond 
 #i put snap tolerence to 150m
 obs <- sites_to_lsn(
   sites = obs,
@@ -338,7 +345,9 @@ obs <- sites_to_lsn(
   save_local = TRUE,
   overwrite = TRUE)
 #For this catchment, the furthest prediction from flowline is 199 meters
-#i put snap tolerence to 200m
+#i put snap tolerence to 350m.
+#this takes a while because there are so many prediction points
+# one pred for each flowline.
 preds <- sites_to_lsn(
   sites = pred,
   edges = flowlines_2,
@@ -347,6 +356,7 @@ preds <- sites_to_lsn(
   file_name = "nsi_PredPoints_clipped",
   snap_tolerance = 350,
   overwrite = TRUE)
+#8131 out of 8234 snapped at 350m distance. This is crazy far so IDK if I want to push it further
 #yes
 edges <- updist_edges(
   edges = flowlines_2,
@@ -387,7 +397,7 @@ ggplot() +
   geom_sf(data = site.list$obs, aes(color = upDist)) +
   coord_sf(datum = st_crs(obs)) +
   scale_color_viridis_c()
-
+#everything looks preped for assembly
 CR_ssn <- ssn_assemble(
   edges = edges,
   lsn_path = temp_dir,
@@ -428,7 +438,7 @@ ggplot() +
     legend.text = element_text(size = 8),
     legend.title = element_text(size = 10))
 
-#plotting SSN without the prediction points
+#plotting SSN without the prediction points for visibility
 ggplot() +
   geom_sf(
     data = CR_ssn$edges,
@@ -463,12 +473,14 @@ names(CR_pred$preds)
 
 ggplot() +
   geom_sf(data = CR_pred$edges) +
-  geom_sf(data = CR_pred$preds$preds, pch = 17, color = "red") +
+  geom_sf(data = CR_pred$preds$preds, pch = 17, color = "red", size=0.5) +
   geom_sf(data = CR_pred$obs, color = "blue", size = 2) +
   theme_bw()
 
 #hydrologic distance matrices that preserve directionality, 
 #which are required for statistical modeling
+#why did i do this twice? First time was for CR_SSN. Second for CR_pred. 
+#shouldn't they be replicates? Why does the second take longer?
 ssn_create_distmat(
   ssn.object = CR_pred,
   predpts = c("preds"),
@@ -477,7 +489,7 @@ ssn_create_distmat(
 
 ggplot() +
   geom_sf(data = CR_pred$edges) +
-  geom_sf(data = CR_pred$obs, aes(color = PFAS40), size = 5) +
+  geom_sf(data = CR_pred$obs, aes(color = PFAS40), size = 2) +
   scale_color_viridis_c(limits = c(0, 60), option = "H") +
   theme_bw()
 
@@ -488,8 +500,8 @@ Togregram <- Torgegram(
 )
 plot(Togregram)
 
-#name the columns you want models for!
-# get all column names
+#name the columns in the S1 file you want models for!
+# generate all column names
 all_cols <- names(CR_ssn$obs)
 #view(all_cols)
 # find the positions of the start and end columns that you want to make models for
@@ -502,6 +514,7 @@ pfas_cols
 #now i'm looking at all PFAS compounds
 #so fun
 
+#blank list for modeled compounds
 models <- list()
 skipped_compounds <- c()  # keep track of skipped compounds
 
@@ -515,7 +528,7 @@ for (compound in pfas_cols) {
     next  # skip this compound
   }
   
-  # Fit model for each individual compound
+  # Fit model for each individual compound. Takes a few seconds
   form <- as.formula(paste0(compound, " ~ npdesdensws + pctimp2019ws"))
   models[[compound]] <- ssn_lm(
     formula = form,
@@ -543,7 +556,7 @@ preds <- list()
 for (compound in pfas_cols) {
   preds[[compound]] <- augment(
     models[[compound]],
-    newdata = "preds",  # <-- tells augment to use all prediction sites in CR_ssn
+    newdata = "preds",  # <-- use all prediction sites in CR_ssn
     pred.type = "preds"
   )
 }
@@ -565,8 +578,10 @@ for (compound in pfas_cols) {
     rename(!!paste0(compound, "_pred") := pred)
 }
 
+#SSN prediction pfas concentrations for all streams. Now to plot it
+#------------------Plotting the SSN----------------------
 #save plots to the working director, in a new folder called out_dir
-out_dir <- "CR_PFAS_maps"
+out_dir <- "CR_PFAS_maps" #folder where the pfas maps are going to go
 if (!dir.exists(out_dir)) dir.create(out_dir)
 
 library(ggplot2)
@@ -578,8 +593,10 @@ library(scales)
 library(broom)
 
 # fixed scale limits
+#check your maximum PFAS concentration in the prediction area before setting a scale_max
+#view(CR_pred$edges)
 scale_min <- 0
-scale_max <- 60
+scale_max <- 100
 
 # ensure obs_sf is an sf and matches edges CRS (as before)
 if (!inherits(CR_ssn$obs, "sf")) {
@@ -595,7 +612,7 @@ if (is.na(st_crs(catchment)) || st_crs(catchment) != edges_crs) {
   catchment <- st_transform(catchment, edges_crs)
 }
 
-# --- 1) Overview map (blacked out) with combined map key ---
+# --- basic overview map of the SSN set up ---
 edges_overview <- CR_pred$edges %>% mutate(feature = "Predicted ng/L")
 obs_overview   <- obs_sf %>% mutate(feature = "Observed ng/L")
 
@@ -625,22 +642,18 @@ ggsave(filename = file.path(out_dir, "overview_map.png"), plot = p_overview,
 
 #--- forloop plots for all compounds------------------
 
-# fixed scale limits
-scale_min <- 0
-scale_max <- 60
-
-# ensure obs_sf is an sf and matches edges CRS
+# make sure obs_sf is an sf and matches edges CRS
 if (!inherits(CR_ssn$obs, "sf")) obs_sf <- st_as_sf(CR_ssn$obs) else obs_sf <- CR_ssn$obs
 edges_crs <- st_crs(CR_pred$edges)
 if (is.na(st_crs(obs_sf)) || st_crs(obs_sf) != edges_crs) obs_sf <- st_transform(obs_sf, edges_crs)
 if (is.na(st_crs(catchment)) || st_crs(catchment) != edges_crs) catchment <- st_transform(catchment, edges_crs)
 
-# precompute glance table for R^2 lookup
+# precompute glance table for R^2 lookup. This is for later
 glance_df <- map_df(models, glance, .id = "compound")
 
 # palette (dark blue into wes colors)
-pal <- colorRampPalette(c("#012A4A", wes_palette("Zissou1", type = "continuous"), "#8B0000"))(256)
-
+pal <- colorRampPalette(c("black", "#010A4A", "#012A4A", wes_palette("Zissou1", type = "continuous"), "#8B0000"))(256)
+#sqrt(256) = 16. changed to sqrt(400) with no noticible change
 for (compound in pfas_cols) {
   if (!compound %in% names(models)) next
   
@@ -672,14 +685,15 @@ for (compound in pfas_cols) {
     
     # shared continuous colorbar
     scale_color_gradientn(
-      colors = pal,
+      colors = pal, #the colour palette I made earlier
       limits = c(scale_min, scale_max),
       oob = scales::squish,
-      na.value = "grey20",
+      na.value = "grey80",
       name = "PFAS (ng/L)",
-      breaks = c(0, 1, 5, 10, 20, 40, 60),
+      breaks = c(0, 1, 5, 10, 20, 50, 100),
       labels = scales::number_format(accuracy = 1.0),
-      trans = "sqrt"
+      trans = "sqrt" #what is this?
+      #trans means "Deprecated in favour of transform".. What?
     ) +
     
     guides(color = guide_colorbar(
