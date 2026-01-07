@@ -161,13 +161,11 @@ ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
 
 #--------Setting up flowpaths for SSN-----------------------
 #Using NHDPlus data set from R package
-#Starting over using !
-#42.38344445112979, -72.5837008452757
-#coordinates at the lake warner outlet.
+#changed to Connecticut River!! By the Old Saybrook - Old Lyme bridge
+# at the mouth of the CT river
+#41.310552444189035, -72.3495729417299
 
-#changed to Connecticut River!! By the Noho bridge
-#42.32282498260607, -72.584448519828
-start_point <- st_sfc(st_point(c(-72.584448519828, 42.32282498260607)), crs = 4269)
+start_point <- st_sfc(st_point(c(-72.3495729417299, 41.310552444189035)), crs = 4269)
 start_comid <- discover_nhdplus_id(start_point)
 start_comid
 
@@ -180,7 +178,7 @@ flowline <- navigate_nldi(
 #save the flowlines
 subset_file <- "LWMR_nhd_subset.gpkg"
 
-#this can take a while. 
+#this can take a while for big areas. 
 #Occasionally the NHDplus website is down, so it won't work at a given moment. 
 subset <- subset_nhdplus(
   comids = as.integer(flowline$UT$nhdplus_comid),
@@ -190,6 +188,7 @@ subset <- subset_nhdplus(
   return_data = TRUE,
   overwrite = TRUE
 )
+
 #make objects for each thing and plot
 flowline  <- sf::read_sf(subset_file, "NHDFlowline_Network")
 catchment <- sf::read_sf(subset_file, "CatchmentSP")
@@ -197,36 +196,43 @@ waterbody <- sf::read_sf(subset_file, "NHDWaterbody")
 plot(st_geometry(flowline), col = "blue")
 plot(start_point, add = TRUE, col = "red", pch = 19)
 plot(waterbody, add = TRUE, col = "black")
-#make sure everything is in the same projection. It should be already.
+#waterbody object stops early on. It's not important. Maybe I'll turn flowline_only=TRUE
+#everything should be already in the same projection
 
 #removed problematic flowlines. These are mostly downstream divergence issues,
 # caused by islands, ponds, and/or swamp area.
-flowline = filter(flowline, !(objectid %in% c(47024,43199, 44653,47090,
-       43148,47133,43611,47395,46738, 46181,47424,47613, 47442
-      ,48775,47583, 47897, 47896,48675, 46082,46795,46052, 48169
-       , 48214,46084,46233, 46952, 46527,45878, 48021, 48020, 47282
-      ,47283, 47284, 45744, 48002, 48011, 45435,45436, 43205, 43208
-      , 44697,44675, 44694, 45774, 45423, 45733, 44601, 43072,43162
-     ,47089, 44582, 42771,43150, 46282, 43463,44073, 44061, 44561
-     , 43757,43766, 44539, 43769,43762,43247,41721,43576,44521,44520
-     ,44519, 44528,42710, 41958,44427,45079,42829,43394,43280,44262
-      , 42963,43502,41269,41270,41021, 41278, 41279, 41204,40933
-      , 43517, 43501,40909, 41256, 41262,41263,42420,40588
-       ,41106,40545, 47396, 46976, 47722, 44599, 44449, 45041,
-     40978, 41417, 43116, 44620, 43115, 43277, 43278, 44955, 40981, 41421)))
+flowline = filter(flowline, !(objectid %in% c(50681,46590,52094,49521,
+    52242, 52243,51998,47024,46976, 47722,43199,44620,44653, 43148
+    , 46282,47090,47133,43611,43116, 43115,44449, 45041,40981, 41421
+   ,43277, 43278, 44955,51168,51163,51359,51326,51231,52448,51342
+  ,50437,50692,50785, 51759,52145,52822,52760,52256,52809,52724,51333
+ ,50226,51609, 51881,51885,52110, 52108,52105,52454,52521,46664
+,47536,51784,51753,51874,51878,51877,51749,51748,52541,52540,52554
+,47442,47613,48856,49891,52177,52814,52562,47574,47424,50016,52090
+,47396,46738,51922,48768,52073,52072,52069,48128,49249,47897, 51909
+,47583,48952,52152,49702,48675, 46795,49320,49311,49950,46052,48168
+,46081,45878,48021,48020,48214,46083,47282,47283,47284,47290,46952
+,46527,48011,46085, 48000,45435,45436,43205,43208,44697,45733,44675
+,44694,45774,45423, 43162,44599,43072,42771,43150,46282,47089,44073
+,44582,44561,43757,44539,43247,43463,44061, 44537,44533,44521, 44520
+,44519,44518,44538,42710,41721,43576,44427, 41958,44262,45079,42993
+,43568, 43280,41278,41279,41204, 40933,42963,43517,43502,43501,40909
+,41263,41269,41270,41209, 41256,41262,42420,40545,40588, 41106
+,49728, 49729, 49730, 49731, 49732
+)))
 
 #these are NSI prediction points at the center of each flowline
 nsi_PredPoints_clipped <- flowline %>%
   st_centroid() %>%            # centroid works for LINESTRING
   st_cast("POINT") %>%         # ensures geometry is POINT
-  mutate(comid = flowline$comid)  # carry over COMID
+  mutate(comid = flowline$comid)  # carry over COMID into the flowline attribute table
 
 plot(st_geometry(flowline), col = "blue")
 plot(start_point, add = TRUE, col = "red", pch = 19)
 plot(st_geometry(nsi_PredPoints_clipped), add = TRUE, col = "red", pch = 19, cex = 1)
 #flowlines are in!!
 
-# Convert S1 to an sf object using Lat/Long
+# Convert the data from S1 to an sf object using Lat/Long
 S1_sf <- st_as_sf(S1, 
                   coords = c("Long", "Lat"),  # x = Long, y = Lat
                   crs = 4326)                # WGS84
@@ -238,7 +244,7 @@ S1_sf <- st_transform(S1_sf, st_crs(flowline))
 head(S1_sf)
 plot(st_geometry(S1_sf), add = TRUE)
 
-# Save as shapefile
+# Save as geopackage file so i can work on it in Arcgis if i want. simplicity too
 st_write(S1_sf, "obs.gpkg", delete_layer = TRUE)
 
 #error is due to time and name of a column. 
@@ -246,17 +252,17 @@ st_write(S1_sf, "obs.gpkg", delete_layer = TRUE)
 
 
 #library(nngeo)  # for snapping, but not really needed anymore
-catchment_valid <- st_make_valid(catchment)
-catchment_union <- st_union(catchment_valid) #combining by subcatchments.
+#catchment_valid <- st_make_valid(catchment)
+#catchment_union <- st_union(catchment_valid) #combining by subcatchments.
 #catchment_union isn't really needed anymore. I should remove this later
 
 obs <- st_read("obs.gpkg")  
 obs <- st_transform(obs, st_crs(flowline))
-obs_clip <- obs[st_within(obs, catchment_union, sparse = FALSE), ]
+#obs_clip <- obs[st_within(obs, catchment_union, sparse = FALSE), ]
 
 plot(st_geometry(flowline), col = "blue")
 plot(st_geometry(catchment), add = TRUE, border = "darkgreen", lwd = 2)
-plot(st_geometry(catchment_union), add = TRUE, border = "black", lwd = 4)
+#plot(st_geometry(catchment_union), add = TRUE, border = "black", lwd = 4)
 plot(st_geometry(nsi_PredPoints_clipped), add = TRUE, col = "red", pch = 19)
 plot(st_geometry(obs), add = TRUE, col = "blue", pch = 19)
 
@@ -278,15 +284,15 @@ nsi_PredPoints_clipped <- nsi_PredPoints_clipped %>%
 
 #renaming obs_clip into obs, and putting everything in coordinates that are meters based
 flowline <- st_transform(flowline, crs =5070)
-obs <- st_transform(obs_clip, crs =5070)
+obs <- st_transform(obs, crs =5070)
 pred <- st_transform(nsi_PredPoints_clipped, crs =5070)
-catchment <- st_transform(catchment_union, crs =5070)
+catchment <- st_transform(catchment, crs =5070)
 
 
 # Now plotting everything together with new coordinate system
 plot(st_geometry(flowline), col = "blue")
 plot(st_geometry(catchment), add = TRUE, border = "darkgreen", lwd = 2)
-plot(st_geometry(obs), add = TRUE, col = "blue", pch = 19)
+plot(st_geometry(obs), add = TRUE, col = "black", pch = 19)
 plot(st_geometry(pred), add = TRUE, col = "red", pch = 19)
 
 
@@ -296,12 +302,13 @@ dir.create(temp_dir, showWarnings = FALSE)
 library(sf)
 
 ssn_path <- file.path(temp_dir, "CR_model.ssn")
-
+#won't properly run if you have edges up on ArcGIS
 flowlines_2 = lines_to_lsn(flowline, 
                            lsn_path = temp_dir,
                            overwrite = TRUE)
 
 #if you get any topology errors, follow next step.
+#called Node Correction
 #Otherwise, skip and move on to SSN Assemble stage
 
 #------------Node Error Correction-----------------
@@ -309,7 +316,7 @@ node_errors = st_read("node_errors.gpkg")
 plot(st_geometry(node_errors), add = TRUE, col = "black", pch = 19)
 
 #found a few topological errors. Going to download the flowpath to correct complex confluences
-gpkg_path <- file.path(temp_dir, "flowline_corrected.gpkg")
+gpkg_path <- file.path("C:/Users/Marston User/Documents/ArcGIS/Projects/CR_SSN/CR_SSN.gdb")
 st_write(flowline,
          dsn = gpkg_path,
          layer = "flowline_corrected",
@@ -344,7 +351,7 @@ obs <- sites_to_lsn(
   snap_tolerance = 150,
   save_local = TRUE,
   overwrite = TRUE)
-#For this catchment, the furthest prediction from flowline is 199 meters
+#For lwmk catchment, the furthest prediction from flowline is 199 meters
 #i put snap tolerence to 350m.
 #this takes a while because there are so many prediction points
 # one pred for each flowline.
@@ -356,7 +363,7 @@ preds <- sites_to_lsn(
   file_name = "nsi_PredPoints_clipped",
   snap_tolerance = 350,
   overwrite = TRUE)
-#8131 out of 8234 snapped at 350m distance. This is crazy far so IDK if I want to push it further
+#12305 out of 12447 snapped at 350m distance. This is crazy far so IDK if I want to push it further
 #yes
 edges <- updist_edges(
   edges = flowlines_2,
@@ -420,7 +427,7 @@ ggplot() +
     data = CR_ssn$edges,
     color = "medium blue",
     aes(linewidth = totdasqkm)) +
-  scale_linewidth(range = c(0.5, 2.5)) +
+  scale_linewidth(range = c(0.5, 2.0)) +
   geom_sf(
     data = CR_ssn$preds$preds,
     size = 0.5,
@@ -473,7 +480,7 @@ names(CR_pred$preds)
 
 ggplot() +
   geom_sf(data = CR_pred$edges) +
-  geom_sf(data = CR_pred$preds$preds, pch = 17, color = "red", size=0.5) +
+  geom_sf(data = CR_pred$preds$preds, pch = 17, color = "red", size=0.3) +
   geom_sf(data = CR_pred$obs, color = "blue", size = 2) +
   theme_bw()
 
@@ -562,7 +569,6 @@ for (compound in pfas_cols) {
 }
 
 for (compound in pfas_cols) {
-  
   df <- preds[[compound]] %>%
     as.data.frame() %>%
     select(-comid) %>%  # remove any existing comid
@@ -577,6 +583,11 @@ for (compound in pfas_cols) {
     left_join(df, by = "comid") %>%
     rename(!!paste0(compound, "_pred") := pred)
 }
+#need to fix this. Download the predicted edges to edit in ArcGIS
+ggsave(CR_pred$edges,file=.gpkg)
+#okay apparently ggsave is only for standard images, not spatial data
+#save spatial data which is an sf object using st_write
+st_write(obj=CR_pred$edges, dsn="Pred_edges.gpkg", layer="edges", driver="GPKG")
 
 #SSN prediction pfas concentrations for all streams. Now to plot it
 #------------------Plotting the SSN----------------------
@@ -596,7 +607,7 @@ library(broom)
 #check your maximum PFAS concentration in the prediction area before setting a scale_max
 #view(CR_pred$edges)
 scale_min <- 0
-scale_max <- 100
+scale_max <- 35
 
 # ensure obs_sf is an sf and matches edges CRS (as before)
 if (!inherits(CR_ssn$obs, "sf")) {
@@ -652,7 +663,7 @@ if (is.na(st_crs(catchment)) || st_crs(catchment) != edges_crs) catchment <- st_
 glance_df <- map_df(models, glance, .id = "compound")
 
 # palette (dark blue into wes colors)
-pal <- colorRampPalette(c("black", "#010A4A", "#012A4A", wes_palette("Zissou1", type = "continuous"), "#8B0000"))(256)
+pal <- colorRampPalette(c("#010A4A", "#012A4A", wes_palette("Zissou1", type = "continuous"), "#8B0000"))(256)
 #sqrt(256) = 16. changed to sqrt(400) with no noticible change
 for (compound in pfas_cols) {
   if (!compound %in% names(models)) next
@@ -690,7 +701,7 @@ for (compound in pfas_cols) {
       oob = scales::squish,
       na.value = "grey80",
       name = "PFAS (ng/L)",
-      breaks = c(0, 1, 5, 10, 20, 50, 100),
+      breaks = c(0, 1, 5,10, 15,25, 35),
       labels = scales::number_format(accuracy = 1.0),
       trans = "sqrt" #what is this?
       #trans means "Deprecated in favour of transform".. What?
