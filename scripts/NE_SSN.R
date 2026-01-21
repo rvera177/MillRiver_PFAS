@@ -166,8 +166,14 @@ ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
 # Download Folder: NHDSnapshot_04.7Z 
 # Load subfolder: NHDFlowline.shp
 
-flowline <- sf::read_sf("C:/Users/Marston User/Documents/NE PFAS Data/NHDPlusV21_NE_01_NHDSnapshot_04/NHDPlusNE/NHDPlus01/NHDSnapshot/Hydrography/NHDFlowline.shp")
-plot(st_geometry(flowline), col = "blue")
+library(sf)
+flowline <- read_sf("C:/Users/Marston User/Documents/NE PFAS Data/NHDPlusV21_NE_01_NHDSnapshot_04/NHDPlusNE/NHDPlus01/NHDSnapshot/Hydrography/NHDFlowline.shp")
+catchment <- read_sf("C:/Users/Marston User/Documents/NE PFAS Data/NHDPlusV21_NE_01_NHDPlusCatchment_01/NHDPlusNE/NHDPlus01/NHDPlusCatchment/Catchment.shp")
+sf::sf_use_s2(FALSE) #Sets the S2 spherical geometry to False. This forces sf to use planar geometry... aparently idk
+catchment <- st_union(catchment) #this merges all catchments into one big one. 
+catchment <- st_sf(catchment) #making sure the merged results is an sf object
+plot(st_geometry(catchment), col = "green4")
+plot(st_geometry(flowline), add=TRUE, col = "blue")
 
 #removed problematic flowlines. These are mostly downstream divergence issues,
 # caused by islands, ponds, and/or swamp area.
@@ -191,15 +197,19 @@ plot(st_geometry(flowline), col = "blue")
 #                                               ,49728, 49729, 49730, 49731, 49732
 # )))
 
-#these are NSI prediction points at the center of each flowline
+#create NSI (National Stream Internet) prediction points at the center of each flowline
+#need to drop the Measurement = M dimension in the XYZM geometry of flowline
+flowline = st_zm(flowline, drop=TRUE, what="ZM") #drop Elevation (Z) and Measure (M, usually Time) dimension from flowline
+
 nsi_PredPoints <- flowline %>%
   st_centroid() %>%            # centroid works for LINESTRING
   st_cast("POINT") %>%         # ensures geometry is POINT
   mutate(comid = flowline$comid)  # carry over COMID into the flowline attribute table
 
-plot(st_geometry(flowline), col = "blue")
+plot(st_geometry(catchment), col = "green4")
+plot(st_geometry(flowline), add=TRUE, col = "blue")
 plot(st_geometry(nsi_PredPoints), add = TRUE, col = "red", pch = 19, cex = 1)
-#flowlines are in!!
+#flowlines and prediction points are in!!
 
 # Convert the data from S1 to an sf object using Lat/Long
 S1_sf <- st_as_sf(S1, 
@@ -223,20 +233,25 @@ obs <- st_read("obs.gpkg")
 obs <- st_transform(obs, st_crs(flowline))
 #obs_clip <- obs[st_within(obs, catchment_union, sparse = FALSE), ]
 
-plot(st_geometry(flowline), col = "blue")
+plot(st_geometry(catchment), col = "green4")
+plot(st_geometry(flowline), add=TRUE, col = "blue")
 plot(st_geometry(nsi_PredPoints), add = TRUE, col = "red", pch = 19)
-plot(st_geometry(obs), add = TRUE, col = "blue", pch = 19)
+plot(st_geometry(obs), add = TRUE, col = "black", pch = 19)
 
 #giving Prediction points obspred ID numbers
-nsi_PredPoint <- nsi_PredPoints %>% 
+nsi_PredPoints <- nsi_PredPoints %>% 
   mutate(
     OBSPRED = row_number() + 100000)
 
 # get StreamCat data for the predicion point COMIDs
 streamcat_data <- sc_get_data(
-  comid = nsi_PredPoints$comid,
+  comid = nsi_PredPoints$COMID,
   metric = c("npdesdens", "pctimp2019", "pcturblo2019"),  # add any other metrics you want
   aoi = "ws")  # watershed scale area of interest
+
+nsi_PredPoints <- nsi_PredPoints %>% rename(comid = COMID) #new name = old name
+streamcat_data <- streamcat_data %>% rename(comid = COMID) #new name = old name
+head(streamcat_data)
 #add streamcat data to prediction points
 nsi_PredPoints <- left_join(nsi_PredPoints, streamcat_data, by = "comid")
 #shorthen prediction points variables down to only the ones i need.
@@ -245,12 +260,14 @@ nsi_PredPoints <- nsi_PredPoints %>%
 
 #renaming obs_clip into obs, and putting everything in coordinates that are meters based
 flowline <- st_transform(flowline, crs =5070)
+catchment <- st_transform(catchment, crs =5070)
 obs <- st_transform(obs, crs =5070)
 pred <- st_transform(nsi_PredPoints_clipped, crs =5070)
 
 
 # Now plotting everything together with new coordinate system
-plot(st_geometry(flowline), col = "blue")
+plot(st_geometry(catchment), col = "green4")
+plot(st_geometry(flowline), add=TRUE, col = "blue")
 plot(st_geometry(obs), add = TRUE, col = "black", pch = 19)
 plot(st_geometry(pred), add = TRUE, col = "red", pch = 19)
 
