@@ -170,7 +170,7 @@ library(sf)
 flowline <- read_sf("C:/Users/Marston User/Documents/NE PFAS Data/NHDPlusV21_NE_01_NHDSnapshot_04/NHDPlusNE/NHDPlus01/NHDSnapshot/Hydrography/NHDFlowline.shp")
 catchment <- read_sf("C:/Users/Marston User/Documents/NE PFAS Data/NHDPlusV21_NE_01_NHDPlusCatchment_01/NHDPlusNE/NHDPlus01/NHDPlusCatchment/Catchment.shp")
 sf::sf_use_s2(FALSE) #Sets the S2 spherical geometry to False. This forces sf to use planar geometry... aparently idk
-catchment <- st_union(catchment) #this merges all catchments into one big one. 
+catchment <- st_union(catchment) #this merges all sub-catchments into one big one. 
 catchment <- st_sf(catchment) #making sure the merged results is an sf object
 plot(st_geometry(catchment), col = "green4")
 plot(st_geometry(flowline), add=TRUE, col = "blue")
@@ -198,7 +198,7 @@ plot(st_geometry(flowline), add=TRUE, col = "blue")
 # )))
 
 #create NSI (National Stream Internet) prediction points at the center of each flowline
-#need to drop the Measurement = M dimension in the XYZM geometry of flowline
+#need to drop the Measurement = M dimension in the XYZM geometry of flowline. Only want the XY geometry
 flowline = st_zm(flowline, drop=TRUE, what="ZM") #drop Elevation (Z) and Measure (M, usually Time) dimension from flowline
 
 nsi_PredPoints <- flowline %>%
@@ -231,7 +231,7 @@ st_write(S1_sf, "obs.gpkg", delete_layer = TRUE)
 
 obs <- st_read("obs.gpkg")  
 obs <- st_transform(obs, st_crs(flowline))
-#obs_clip <- obs[st_within(obs, catchment_union, sparse = FALSE), ]
+
 
 plot(st_geometry(catchment), col = "green4")
 plot(st_geometry(flowline), add=TRUE, col = "blue")
@@ -250,19 +250,18 @@ streamcat_data <- sc_get_data(
   aoi = "ws")  # watershed scale area of interest
 
 nsi_PredPoints <- nsi_PredPoints %>% rename(comid = COMID) #new name = old name
-streamcat_data <- streamcat_data %>% rename(comid = COMID) #new name = old name
 head(streamcat_data)
 #add streamcat data to prediction points
 nsi_PredPoints <- left_join(nsi_PredPoints, streamcat_data, by = "comid")
 #shorthen prediction points variables down to only the ones i need.
 nsi_PredPoints <- nsi_PredPoints %>%
-  select(OBSPRED, comid, totdasqkm, npdesdensws, pctimp2019ws, geom)
+  select(OBSPRED, comid, npdesdensws, pctimp2019ws)
 
 #renaming obs_clip into obs, and putting everything in coordinates that are meters based
 flowline <- st_transform(flowline, crs =5070)
 catchment <- st_transform(catchment, crs =5070)
 obs <- st_transform(obs, crs =5070)
-pred <- st_transform(nsi_PredPoints_clipped, crs =5070)
+pred <- st_transform(nsi_PredPoints, crs =5070)
 
 
 # Now plotting everything together with new coordinate system
