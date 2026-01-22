@@ -255,7 +255,7 @@ head(streamcat_data)
 nsi_PredPoints <- left_join(nsi_PredPoints, streamcat_data, by = "comid")
 #shorthen prediction points variables down to only the ones i need.
 nsi_PredPoints <- nsi_PredPoints %>%
-  select(OBSPRED, comid, npdesdensws, pctimp2019ws)
+  select(OBSPRED, comid, npdesdensws, pctimp2019ws, geometry)
 
 #renaming obs_clip into obs, and putting everything in coordinates that are meters based
 flowline <- st_transform(flowline, crs =5070)
