@@ -51,7 +51,6 @@ PFAS_Raw = rbind(PFOA_Raw,PFOS_Raw)
 #combine site coordinate information with PFAS concentrations
 PFAS <- left_join(PFAS, site_info, by = "wqms_id")
 
-
 #convert to SF object for plotting
 PFAS= st_as_sf(PFAS,
                   coords = c("wqms_lon", "wqms_lat"),  # x = Long, y = Lat
@@ -60,7 +59,7 @@ PFAS= st_as_sf(PFAS,
 #plot them on a world map
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
-#update the coordinate system to match the map
+#update the coordinate system to match the world map
 PFAS = st_transform(PFAS, st_crs(world))
 
 ggplot(data = world) +
@@ -70,11 +69,9 @@ ggplot(data = world) +
   ggtitle("Global Map of PFOA and PFAS") +
   theme_classic()
 
-#everything above is personal code
-#the following is leaflet code made with umass gen AI
-library(sf)
+#everything above is my own code
+#the following is leaflet code made with help from umass gen AI because I never made this before
 library(leaflet)
-library(rnaturalearth)
 library(htmlwidgets)
 
 # build HTML popup strings from attributes (safe even if different columns)
@@ -101,16 +98,16 @@ Caravan_PFOA_PFAS_map <- leaflet(options = leafletOptions(minZoom = 2, maxZoom =
                    color = "red", fillColor = "red",
                    radius = 5, stroke = FALSE, fillOpacity = 0.9,
                    popup = ~popup,
-                   group = "PFOA",
+                   group = "PFOS",
                    clusterOptions = markerClusterOptions()) %>%
   # PFOS points
   addCircleMarkers(data = PFAS[PFAS$variable == "PFOA",],
                    color = "blue", fillColor = "blue",
                    radius = 5, stroke = FALSE, fillOpacity = 0.9,
                    popup = ~popup,
-                   group = "PFOS",
+                   group = "PFOA",
                    clusterOptions = markerClusterOptions()) %>%
-  addLayersControl(overlayGroups = c("World", "PFOA", "PFOS"),
+  addLayersControl(overlayGroups = c("World", "PFOS", "PFOA"),
                    options = layersControlOptions(collapsed = FALSE)) %>%
   addLegend(position = "topright",
             colors = c("red", "blue"),
