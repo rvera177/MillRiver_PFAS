@@ -75,46 +75,50 @@ highchart() %>%
 #--------my attempt at highcharts------------
 
 highchart() %>%
-  hc_title(text = "Storm 15 results") %>%
+  hc_title(text = "Storm 15 PFAS results") %>%
   hc_yAxis_multiples(
-    list(title = list(text = "PFHxS (ng/L)"), lineWidth = 3, lineColor = "orange", min = min(AllChem_WetCenter_SE15$`PFHxS Results`), max = max(AllChem_WetCenter_SE15$`PFHxS Results`)),
+    list(title = list(text = "PFHxA (ng/L)"), lineWidth = 3, lineColor = "orange", min = min(AllChem_WetCenter_SE15$`PFHxA Results`), max = max(AllChem_WetCenter_SE15$`PFHxA Results`)),
     list(title = list(text = "PFOA (ng/L)"), lineWidth = 3, lineColor = "darkorange", min = min(AllChem_WetCenter_SE15$`PFOA Results`), max = max(AllChem_WetCenter_SE15$`PFOA Results`)),
-    list(title = list(text = "PFOS (ng/L)"), lineWidth = 3, lineColor = "red",   min = min(AllChem_WetCenter_SE15$`PFOS Results`), max = max(AllChem_WetCenter_SE15$`PFOS Results`)),
+    list(title = list(text = "Sodium"), lineWidth = 3, lineColor = "green",   min = min(AllChem_WetCenter_SE15$Sodium), max = max(AllChem_WetCenter_SE15$Sodium)),
     list(title = list(text = "PFHpA (ng/L)"), lineWidth = 3, lineColor = "rosybrown",   min = min(AllChem_WetCenter_SE15$`PFHpA Results`), max = max(AllChem_WetCenter_SE15$`PFHpA Results`)),
-    list(title = list(text = "PFDA (ng/L)"), lineWidth = 3, lineColor = "darkred",   min = min(AllChem_WetCenter_SE15$`PFDA Results`), max = max(AllChem_WetCenter_SE15$`PFDA Results`)),
-    list(title = list(text = "Flow (m3/s)"), lineWidth = 3, lineColor = "darkblue",   min = min(AllChem_WetCenter_SE15$Flow), max = max(AllChem_WetCenter_SE15$Flow))
+    list(title = list(text = "PFDA (ng/L)"), lineWidth = 3, lineColor = "darkred",   min = min(AllChem_WetCenter_SE15$`PFPeA Results`), max = max(AllChem_WetCenter_SE15$`PFPeA Results`)),
+    list(title = list(text = "Flow (m3/s)"), lineWidth = 3, lineColor = "blue",   min = min(AllChem_WetCenter_SE15$Flow), max = max(AllChem_WetCenter_SE15$Flow)),
+    list(title = list(text = "Chloride"), lineWidth = 3, lineColor = "darkolivegreen",   min = min(AllChem_WetCenter_SE15$Chloride), max = max(AllChem_WetCenter_SE15$Chloride))
   ) %>%
   #hc_add_theme(hc_theme_sandsignika()) %>%
   #adding in the flow time series first so it's in the background
   hc_add_series(name = "Flow",
                 data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = Flow)),
-                yAxis = 5, type="area", lineWidth=5, color = 'darkblue') %>%
+                yAxis = 5, type="area", lineWidth=5, color = 'blue') %>%
    hc_plotOptions(type = "line", series = list(connectNulls = TRUE)) %>% #this makes the lines plot across NA values
-  hc_add_series(name = "PFHxS",
-                data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = `PFHxS Results`)),
+  hc_add_series(name = "PFHxA",
+                data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = `PFHxA Results`)),
                  yAxis = 0, lineWidth = 5, color = "orange") %>%
   hc_add_series(name = "PFOA",
                 data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = `PFOA Results`)),
                 yAxis = 1, lineWidth = 5, color = 'darkorange') %>%
-  hc_add_series(name = "PFOS",
-                data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = `PFOS Results`)),
-                yAxis = 2, lineWidth = 5,color = 'red') %>%
+  hc_add_series(name = "Sodium",
+                data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = Sodium)),
+                yAxis = 2, lineWidth = 5,color = "green") %>%
   hc_add_series(name = "PFHpA",
                 data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = `PFHpA Results`)),
                 yAxis = 3, lineWidth = 5,color = "rosybrown") %>%
-  hc_add_series(name = "PFDA",
-              data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = `PFDA Results`)),
-               yAxis = 4, lineWidth = 5, color = 'darkred')
+  hc_add_series(name = "PFHeA",
+              data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = `PFPeA Results`)),
+               yAxis = 4, lineWidth = 5, color = 'darkred')%>%
+hc_add_series(name = "Chloride",
+              data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = Chloride)),
+              yAxis = 6, lineWidth = 5, color = "darkolivegreen")
 
 cor_data <- read.csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/Zyna_%20storm%2015%20sampling%20All%20Chem%20results.csv")
-#correlation
+#correlation. Removing columns that are time related or only had zero's
 cor_results <- cor_data %>%
   select(-c(data.point, Date, Time, Ammonium, Bromide, Bromate, Phosphate, Chlorite, Chlorate, Flouride)) %>%
   cor(method = "spearman", use = "complete.obs")
-#library()  # I forget which package is for melt
+library(reshape2)  # this is for melting
 cor_long <- melt(cor_results)
 
-#plotting the correlation results. 
+#correlation results. Red is supposed to be negative correlation, so that's fixed now
 library(pheatmap)
 pheatmap(cor_results,
          color = colorRampPalette(c("red", "white", "blue"))(50),
@@ -122,15 +126,20 @@ pheatmap(cor_results,
          breaks = seq(-1, 1, length.out = 51),
          main = "Spearman Correlation Heatmap All Chem")
 
+cor_results[lower.tri(cor_results, diag = TRUE)] <- NA
+cor_long <- melt(cor_results, varnames = c("Variable1", "Variable2"), value.name = "Spearman_r", na.rm = TRUE)
+
+# Reordering Variable2 so labels are aligned with color with tiles
+cor_long$Variable2 <- factor(cor_long$Variable2, levels = rev(unique(cor_long$Variable2)))
+
 ggplot(cor_long, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
   geom_tile(color = "white") +
   geom_text(aes(label = round(Spearman_r, 2)), color = "black", size = 3) +
-  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.text.y = element_text(hjust = 1)
-  )
+    axis.text.y = element_text(hjust = 1))
 
 
 
@@ -138,10 +147,10 @@ ggplot(cor_long, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
 highchart() %>%
   hc_title(text = "Storm 15 IC/TOC results") %>%
   hc_yAxis_multiples(
-    list(title = list(text = "DOC"), lineWidth = 3, lineColor = "lightgreen", min = min(AllChem_WetCenter_SE15$TOC), max = max(AllChem_WetCenter_SE15$TOC)),
-    list(title = list(text = "TOC"), lineWidth = 3, lineColor = 'forestgreen', min = min(AllChem_WetCenter_SE15$DOC), max = max(AllChem_WetCenter_SE15$DOC)),
-    list(title = list(text = "TN)"), lineWidth = 3, lineColor = "black",   min = min(AllChem_WetCenter_SE15$TN), max = max(AllChem_WetCenter_SE15$TN)),
-    list(title = list(text = "Nitrate"), lineWidth = 3, lineColor = "maroon",   min = min(AllChem_WetCenter_SE15$Nitrate), max = max(AllChem_WetCenter_SE15$Nitrate)),
+    list(title = list(text = "DN"), lineWidth = 3, lineColor = "darkgreen", min = min(AllChem_WetCenter_SE15$DN), max = max(AllChem_WetCenter_SE15$DN)),
+    list(title = list(text = "DOC"), lineWidth = 3, lineColor = 'orange', min = min(AllChem_WetCenter_SE15$DOC), max = max(AllChem_WetCenter_SE15$DOC)),
+    list(title = list(text = "TN)"), lineWidth = 3, lineColor = "forestgreen",   min = min(AllChem_WetCenter_SE15$TN), max = max(AllChem_WetCenter_SE15$TN)),
+    list(title = list(text = "Nitrate"), lineWidth = 3, lineColor = "green",   min = min(AllChem_WetCenter_SE15$Nitrate), max = max(AllChem_WetCenter_SE15$Nitrate)),
     list(title = list(text = "6:2 FTS (ng/L)"), lineWidth = 3, lineColor = "red",   min = min(AllChem_WetCenter_SE15$`6:2FTS Results`), max = max(AllChem_WetCenter_SE15$`6:2FTS Results`)),
     list(title = list(text = "Flow (m3/s)"), lineWidth = 3, lineColor = "blue",   min = min(AllChem_WetCenter_SE15$Flow), max = max(AllChem_WetCenter_SE15$Flow))
   ) %>%
@@ -151,21 +160,24 @@ highchart() %>%
                 data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = Flow)),
                 yAxis = 5, type="area", lineWidth=5, color = 'blue') %>%
   hc_plotOptions(type = "line", series = list(connectNulls = TRUE)) %>% #this makes the lines plot across NA values
-  hc_add_series(name = "TOC",
-                data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = TOC)),
-                yAxis = 0, lineWidth = 5, color = "lightgreen") %>%
+  hc_add_series(name = "DN",
+                data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = DN)),
+                yAxis = 0, lineWidth = 5, color = "darkgreen") %>%
   hc_add_series(name = "DOC",
                 data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = DOC)),
-                yAxis = 1, lineWidth = 5, color = 'forestgreen') %>%
+                yAxis = 1, lineWidth = 5, color = 'orange') %>%
   hc_add_series(name = "TN",
                 data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = TN)),
-                yAxis = 2, lineWidth = 5,color = 'black') %>%
+                yAxis = 2, lineWidth = 5,color = 'forestgreen') %>%
   hc_add_series(name = "Nitrate",
                 data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = Nitrate)),
-                yAxis = 3, lineWidth = 5,color = "maroon") %>%
+                yAxis = 3, lineWidth = 5,color = "green") %>%
   hc_add_series(name = "6:2 FTS",
                 data = list_parse2(AllChem_WetCenter_SE15 %>% transmute(x = DateTime, y = `6:2FTS Results`)),
                 yAxis = 4, lineWidth = 5, color = 'red')
+
+
+
 
 
 #-----Graphing storm 16------------------
