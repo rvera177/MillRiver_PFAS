@@ -74,7 +74,7 @@ ggplot() +
              aes(x = DateTime, y = `GaugeHeight (ft)`, color = "Manual Gauge"),
              size = 3, shape = 21, fill = "red") +
   scale_color_manual(values = c("10-min Sensor" = "steelblue", "Manual Gauge" = "red")) +
-  labs(title = "Stream Height — 10-Minute Resolution",
+  labs(title = "Stream Height",
        subtitle = "Barometric-compensated pressure, calibrated to manual gauge readings",
        x = "Date/Time (EDT)", y = "Water Level (ft)",
        color = NULL) +
@@ -132,7 +132,7 @@ ggplot() +
              aes(x = DateTime, y = a * (`GaugeHeight (ft)` * 0.3048)^b, color = "Manual Gauge"),
              size = 3, shape = 21, fill = "red") +
   scale_color_manual(values = c("10-min Sensor" = "steelblue", "Manual Gauge" = "red")) +
-  labs(title = "Stream Flow — 10-Minute Resolution",
+  labs(title = "Stream Flow",
        subtitle = "Barometric-compensated pressure, calibrated to manual gauge readings",
        x = "Date/Time (EDT)", y = "Discharge (m³/s)",
        color = NULL) +
@@ -277,4 +277,364 @@ storm_plots <- map(storms_with_data, plot_storm_hydrograph,
 # --- View ---
 walk(storm_plots, print)
 
+library(highcharter)
 
+# --- First, join Flow to Storm16_PFAS by nearest timestamp ---
+Storm16_PFAS <- Storm16_PFAS %>%
+  mutate(Flow = approx(
+    x    = WetStation4Stream$Time,
+    y    = WetStation4Stream$Flow,
+    xout = DateTime)$y)
+
+# --- Highcharter Plot ---
+highchart() %>%
+  hc_title(text = "Storm 16 PFAS + Hydrograph") %>%
+  hc_yAxis_multiples(
+    list(title = list(text = "Flow (m³/s)"),    lineWidth = 3, lineColor = "blue",
+         min = min(Storm16_PFAS$Flow,  na.rm = TRUE), max = max(Storm16_PFAS$Flow,  na.rm = TRUE)),
+    list(title = list(text = "PFOA (ng/L)"),    lineWidth = 3, lineColor = "red",
+         min = min(Storm16_PFAS$PFOA,  na.rm = TRUE), max = max(Storm16_PFAS$PFOA,  na.rm = TRUE)),
+    list(title = list(text = "PFHxA (ng/L)"),   lineWidth = 3, lineColor = "orange",
+         min = min(Storm16_PFAS$PFHxA, na.rm = TRUE), max = max(Storm16_PFAS$PFHxA, na.rm = TRUE))
+  ) %>%
+  hc_plotOptions(series = list(connectNulls = TRUE)) %>%
+  hc_add_series(
+    name = "Flow",
+    data = list_parse2(Storm16_PFAS %>% transmute(x = datetime_to_timestamp(DateTime), y = Flow)),
+    yAxis = 0, type = "line", lineWidth = 4, color = "blue") %>%
+  hc_add_series(
+    name = "PFOA",
+    data = list_parse2(Storm16_PFAS %>% transmute(x = datetime_to_timestamp(DateTime), y = PFOA)),
+    yAxis = 1, type = "line", lineWidth = 3, color = "red") %>%
+#  hc_add_series(
+#    name = "PFHxA",
+#    data = list_parse2(Storm16_PFAS %>% transmute(x = datetime_to_timestamp(DateTime), y = PFHxA)),
+#    yAxis = 2, type = "line", lineWidth = 3, color = "orange") %>%
+  hc_xAxis(type = "datetime", title = list(text = "Date/Time (EDT)"),
+           dateTimeLabelFormats = list(day = "%b %d")) %>%
+  hc_tooltip(shared = TRUE, crosshairs = TRUE,
+             valueDecimals = 2) %>%
+  hc_legend(enabled = TRUE)
+
+
+#adding flow together. 
+
+PFAS_WetCenter_2025 <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/WetCenterPFASResults.csv")
+WetCenterDischarge <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/WetCenterDischarge.csv")
+AllChem_WetCenter_SE15 <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/Storm_Event_15_all_results.csv")
+
+# --- Reparse WetCenterDischarge$Time ---
+WetCenterDischarge <- WetCenterDischarge %>%
+  mutate(Time = mdy_hm(Time, tz = "America/New_York"))
+
+# --- Recompute WetCenterDischarge flow with new NLS coefficients ---
+WetCenterDischarge <- WetCenterDischarge %>%
+  mutate(
+    GaugeHeight_m = `Adjusted Gauge Height` * 0.3048,
+    Flow          = a * (GaugeHeight_m ^ b)  # same NLS coefficients from rating curve
+  )
+
+# --- Trim WetCenterDischarge to end where pressure transducer begins ---
+cutover <- min(WetStation4Stream$Time, na.rm = TRUE)
+
+WetCenterDischarge_trimmed <- WetCenterDischarge %>%
+  filter(Time < cutover) %>%
+  transmute(
+    Time,
+    GaugeHeight_m,
+    Flow,
+    Source = "Staff Gauge"
+  )
+
+# --- Prepare WetStation4Stream with matching columns and remove first entry ---
+WetStation4Stream_labeled <- WetStation4Stream %>%
+  slice(-1) %>%  # removes first row
+  transmute(
+    Time,
+    GaugeHeight_m,
+    Flow,
+    Source = "Pressure Transducer"
+  )
+# --- Combine ---
+WetCenter_Flow_Combined <- bind_rows(WetCenterDischarge_trimmed,
+                                     WetStation4Stream_labeled) %>%
+  arrange(Time)
+
+# --- Sanity checks ---
+range(WetCenter_Flow_Combined$Time, na.rm = TRUE)
+table(WetCenter_Flow_Combined$Source)
+
+# --- Plot to visually inspect the join ---
+ggplot(WetCenter_Flow_Combined, aes(x = Time, y = Flow, color = Source)) +
+  geom_line(linewidth = 0.8) +
+  scale_color_manual(values = c("Staff Gauge" = "darkorange",
+                                "Pressure Transducer" = "steelblue")) +
+  labs(title = "Mill River — Combined Flow Record",
+       x = "Date/Time", y = "Discharge (m³/s)") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# so the time view data is underpredicting flow
+overlap_start <- min(WetStation4Stream$Time, na.rm = TRUE)
+overlap_end   <- as.POSIXct("2025-10-20 21:15:00", tz = "America/New_York")
+
+tv_overlap <- WetCenterDischarge %>%
+  filter(Time >= overlap_start, Time <= overlap_end) %>%
+  summarise(mean_H = mean(GaugeHeight_m, na.rm = TRUE))
+
+pt_overlap <- WetStation4Stream %>%
+  filter(Time >= overlap_start, Time <= overlap_end) %>%
+  summarise(mean_H = mean(GaugeHeight_m, na.rm = TRUE))
+
+# The offset we need to add to TimeView to match pressure transducer
+datum_offset <- pt_overlap$mean_H - tv_overlap$mean_H
+print(paste("Datum offset (m):", round(datum_offset, 4)))
+
+
+# --- Remove outliers and apply datum correction ---
+WetCenterDischarge_clean <- WetCenterDischarge %>%
+  filter(GaugeHeight_m < 0.65) %>%
+  mutate(
+    GaugeHeight_m = GaugeHeight_m + datum_offset,
+    Flow          = a * (GaugeHeight_m ^ b)
+  )
+
+# --- Verify ---
+summary(WetCenterDischarge_clean$GaugeHeight_m)
+summary(WetCenterDischarge_clean$Flow)
+
+# --- Rebuild combined dataset ---
+WetCenterDischarge_trimmed <- WetCenterDischarge_clean %>%
+  filter(Time < overlap_start) %>%
+  transmute(
+    Time,
+    GaugeHeight_m,
+    Flow,
+    Source = "TimeView"
+  )
+
+WetStation4Stream_labeled <- WetStation4Stream %>%
+  slice(-1) %>%
+  transmute(
+    Time,
+    GaugeHeight_m,
+    Flow,
+    Source = "Pressure Transducer"
+  )
+
+WetCenter_Flow_Combined <- bind_rows(WetCenterDischarge_trimmed,
+                                     WetStation4Stream_labeled) %>%
+  arrange(Time)
+
+# --- Plot to inspect ---
+ggplot(WetCenter_Flow_Combined, aes(x = Time, y = Flow, color = Source)) +
+  geom_line(linewidth = 0.8) +
+  scale_color_manual(values = c("TimeView" = "darkorange",
+                                "Pressure Transducer" = "steelblue")) +
+  labs(title = "Mill River — Combined Flow Record",
+       x = "Date/Time", y = "Discharge (m³/s)") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+
+# --- Plot ONLY the overlap period to assess the correction ---
+ggplot() +
+  geom_line(data = WetCenterDischarge_clean %>% 
+              filter(Time >= overlap_start, Time <= overlap_end),
+            aes(x = Time, y = Flow, color = "TimeView"),
+            linewidth = 0.8) +
+  geom_line(data = WetStation4Stream_labeled %>%
+              filter(Time >= overlap_start, Time <= overlap_end),
+            aes(x = Time, y = Flow, color = "Pressure Transducer"),
+            linewidth = 0.8) +
+  scale_color_manual(values = c("TimeView" = "darkorange",
+                                "Pressure Transducer" = "steelblue")) +
+  labs(title = "Overlap Period — Datum Correction Check",
+       x = "Date/Time", y = "Discharge (m³/s)") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+# --- Compute a regression-based correction instead of simple offset ---
+# Join the two sources by nearest timestamp during overlap
+library(data.table)
+
+tv_dt <- WetCenterDischarge_clean %>%
+  filter(Time >= overlap_start, Time <= overlap_end) %>%
+  select(Time, GaugeHeight_m) %>%
+  as.data.table()
+
+pt_dt <- WetStation4Stream_labeled %>%
+  filter(Time >= overlap_start, Time <= overlap_end) %>%
+  select(Time, GaugeHeight_m) %>%
+  rename(H_pt = GaugeHeight_m) %>%
+  as.data.table()
+
+overlap_matched <- tv_dt[pt_dt, on = "Time", roll = "nearest"] %>%
+  as_tibble() %>%
+  rename(H_tv = GaugeHeight_m)
+
+# Fit a linear model: PT height ~ TimeView height
+overlap_model <- lm(H_pt ~ H_tv, data = overlap_matched)
+summary(overlap_model)
+
+# Extract corrected coefficients
+intercept    <- coef(overlap_model)["(Intercept)"]
+slope        <- coef(overlap_model)["H_tv"]
+
+print(paste("Correction: H_corrected =", round(slope, 4), "* H_tv +", round(intercept, 4)))
+
+
+
+# --- Apply regression-based correction to TimeView data ---
+WetCenterDischarge_corrected <- WetCenterDischarge_clean %>%
+  mutate(
+    GaugeHeight_m = slope * GaugeHeight_m + intercept,
+    Flow          = a * (GaugeHeight_m ^ b)
+  )
+
+# --- Check the overlap now ---
+ggplot() +
+  geom_line(data = WetCenterDischarge_corrected %>%
+              filter(Time >= overlap_start, Time <= overlap_end),
+            aes(x = Time, y = Flow, color = "TimeView"),
+            linewidth = 0.8) +
+  geom_line(data = WetStation4Stream_labeled %>%
+              filter(Time >= overlap_start, Time <= overlap_end),
+            aes(x = Time, y = Flow, color = "Pressure Transducer"),
+            linewidth = 0.8) +
+  scale_color_manual(values = c("TimeView" = "darkorange",
+                                "Pressure Transducer" = "steelblue")) +
+  labs(title = "Overlap Period — Regression Correction Check",
+       x = "Date/Time", y = "Discharge (m³/s)") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+#Alot better!!
+
+# --- Rebuild combined dataset with corrected TimeView ---
+WetCenterDischarge_trimmed <- WetCenterDischarge_corrected %>%
+  filter(Time < overlap_start) %>%
+  transmute(Time, GaugeHeight_m, Flow, Source = "TimeView")
+
+WetCenter_Flow_Combined <- bind_rows(WetCenterDischarge_trimmed,
+                                     WetStation4Stream_labeled) %>%
+  arrange(Time)
+
+# --- Full record plot ---
+ggplot(WetCenter_Flow_Combined, aes(x = Time, y = Flow, color = Source)) +
+  geom_line(linewidth = 0.6) +
+  scale_color_manual(values = c("TimeView" = "darkorange",
+                                "Pressure Transducer" = "steelblue")) +
+  labs(title = "Mill River — Combined Flow Record",
+       x = "Date/Time", y = "Discharge (m³/s)") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+
+# --- Define your event periods ---
+events <- tribble(
+  ~label,        ~start,                    ~end,                      ~type,
+  "Storm 15",   "2025-10-10 00:00",        "2025-10-16 00:00",        "Storm",
+  "Storm 16",   "2025-10-29 20:00",        "2025-11-07 18:00",        "Storm",
+  # add other storms here as you go
+  "12", "2025-07-09 00:00",        "2025-07-12 10:20",        "Storm",
+  "13", "2025-07-14 05:00",        "2025-07-16 13:00",        "Storm"
+) %>%
+  mutate(
+    start = as.POSIXct(start, tz = "America/New_York"),
+    end   = as.POSIXct(end,   tz = "America/New_York")
+  )
+
+# --- Color palette per event type ---
+event_colors <- c(
+  "Storm"    = "steelblue",
+  "Baseflow" = "forestgreen",
+  "Snowmelt" = "mediumpurple"
+)
+
+# --- Plot ---
+ggplot() +
+  # Shaded event windows — drawn first so they sit behind the hydrograph
+  geom_rect(data = events,
+            aes(xmin = start, xmax = end,
+                ymin = -Inf, ymax = Inf,
+                fill = type),
+            alpha = 0.25) +
+  # Hydrograph line
+  geom_line(data = WetCenter_Flow_Combined,
+            aes(x = Time, y = Flow, color = Source),
+            linewidth = 0.6) +
+  # Event labels at top of each shaded window
+  geom_text(data = events,
+            aes(x = start + (end - start) / 2,  # centered in window
+                y = Inf, label = label),
+            vjust = 1.5, size = 3.5, fontface = "bold") +
+  scale_fill_manual(values = event_colors, name = "Event Type") +
+  scale_color_manual(values = c("TimeView" = "darkorange",
+                                "Pressure Transducer" = "steelblue"),
+                     name = "Source") +
+  labs(title = "Mill River — Combined Flow Record with Sampling Events",
+       x = "Date/Time", y = "Discharge (m³/s)") +
+  scale_x_datetime(date_labels = "%b %Y", date_breaks = "1 month",
+                   expand = c(0, 0)) +
+  theme_bw() +
+  theme(legend.position  = "bottom",
+        axis.text.x      = element_text(angle = 45, hjust = 1))
+
+
+
+# --- Load inventory ---
+PFAS_inventory_full <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/PFAS%20Inventory%20-%20temp.csv")
+
+# --- Parse DateTime ---
+PFAS_inventory_full <- PFAS_inventory_full %>%
+  mutate(
+    DateTime = as.POSIXct(paste(Date, format(Time, "%H:%M")),
+                          format = "%m/%d/%y %H:%M",
+                          tz = "America/New_York")
+  )
+
+# --- Filter to Wet Center stream samples only ---
+WetCenter_samples <- PFAS_inventory_full %>%
+  filter(str_detect(Location, regex("wet center$", ignore_case = TRUE)),
+         Type == "Stream") %>%
+  filter(!is.na(DateTime)) %>%
+  # Snap to nearest flow value
+  mutate(Flow = approx(
+    x    = WetCenter_Flow_Combined$Time,
+    y    = WetCenter_Flow_Combined$Flow,
+    xout = DateTime,
+    rule = 2)$y)
+
+# --- Plot ---
+ggplot() +
+  geom_rect(data = events,
+            aes(xmin = start, xmax = end,
+                ymin = -Inf, ymax = Inf,
+                fill = type),
+            alpha = 0.25) +
+  geom_line(data = WetCenter_Flow_Combined,
+            aes(x = Time, y = Flow, color = Source),
+            linewidth = 0.6) +
+  geom_point(data = WetCenter_samples,
+             aes(x = DateTime, y = Flow),
+             color = "red", size = 2.5, alpha = 0.8) +
+  geom_text(data = events,
+            aes(x = start + (end - start) / 2,
+                y = Inf, label = label),
+            vjust = 1.5, size = 3.5, fontface = "bold") +
+  scale_fill_manual(values = event_colors, name = "Event Type") +
+  scale_color_manual(values = c("TimeView" = "darkorange",
+                                "Pressure Transducer" = "steelblue"),
+                     name = "Source") +
+  labs(title = "Mill River — Combined Flow Record with PFAS Samples",
+       x = "Date/Time", y = "Discharge (m³/s)") +
+  scale_x_datetime(date_labels = "%b %Y", date_breaks = "1 month",
+                   expand = c(0, 0)) +
+  theme_bw() +
+  theme(legend.position  = "bottom",
+        axis.text.x      = element_text(angle = 45, hjust = 1))
