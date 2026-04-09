@@ -1,32 +1,272 @@
-Location,Date,Time,DateTime,Collecter,Type,Purpose,Comment
-Wet Center,10/30/2025,3:40:00 AM,10/30/2025 3:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 1
-Wet Center,10/30/2025,5:40:00 AM,10/30/2025 5:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 2
-Wet Center,10/30/2025,7:40:00 AM,10/30/2025 7:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 3
-Wet Center,10/30/2025,9:40:00 AM,10/30/2025 9:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 4
-Wet Center,10/30/2025,11:40:00 AM,10/30/2025 11:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 5
-Wet Center,10/30/2025,1:40:00 PM,10/30/2025 13:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 6
-Wet Center,10/30/2025,3:40:00 PM,10/30/2025 15:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 7
-Wet Center,10/30/2025,5:40:00 PM,10/30/2025 17:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 8
-Wet Center,10/30/2025,7:40:00 PM,10/30/2025 19:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 9
-Wet Center,10/30/2025,9:40:00 PM,10/30/2025 21:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 10
-Wet Center,10/30/2025,11:40:00 PM,10/30/2025 23:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 11
-Wet Center,10/31/2025,1:40:00 AM,10/31/2025 1:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 12
-Wet Center,10/31/2025,3:40:00 AM,10/31/2025 3:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 13
-Wet Center,10/31/2025,5:40:00 AM,10/31/2025 5:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 14
-Wet Center,10/31/2025,7:40:00 AM,10/31/2025 7:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 15
-Wet Center,10/31/2025,8:49:00 AM,10/31/2025 8:49,"ZW, TN",Stream,Baseflow,During storm 16.
-Wet Center,10/31/2025,9:40:00 AM,10/31/2025 9:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 16
-Wet Center,10/31/2025,11:40:00 AM,10/31/2025 11:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 17
-Wet Center,10/31/2025,1:40:00 PM,10/31/2025 13:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 18
-Wet Center,10/31/2025,3:40:00 PM,10/31/2025 15:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 19
-Wet Center,10/31/2025,5:40:00 PM,10/31/2025 17:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 20
-Wet Center,10/31/2025,7:40:00 PM,10/31/2025 19:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 21
-Wet Center,10/31/2025,9:40:00 PM,10/31/2025 21:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 22
-Wet Center,10/31/2025,11:40:00 PM,10/31/2025 23:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 23
-Wet Center,11/1/2025,1:40:00 AM,11/1/2025 1:40,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 24
-Wet Center,11/3/2025,6:00 PM,11/3/2025 18:00,"RV, ZW",Stream,Baseflow,After storm 16
-Wet Center,11/4/2025,1:26 PM,11/4/2025 13:26,"RV, ZW",Stream,Baseflow,"Quick and heavy thunderstorm the night before. ~0.17"" rain"
-Wet Center,11/5/2025,2:20 PM,11/5/2025 14:20,"RV, XG",Stream,Baseflow,
-Wet Center,11/7/2025,8:54:00 AM,11/7/2025 8:54,"RV, NA",Stream,Baseflow,
-Wet Center,11/14/2025,8:57:00 AM,11/14/2025 8:57,RV,Stream,Baseflow,
-Wet Center,11/21/2025,6:45:00 AM,11/21/2025 6:45,RV,Stream,Baseflow,
+Sample #,Sample Name on LC/MS,Location,Date,Time,Collecter,Type,Project,Comment,Container Mass (g),Total mass (g),Sample Mass (g),TOC/IC sample collected?,PFAS Collected?,TOC/TN analyzed,IC analyzed,UV254 analyzed,PFAS Analyzed?,Isotope #,Delta 2H,Delta 18O,Delta 17O,Ran on Auto SPE
+1,,Wet Center ,6/24/25,11:32:00 AM,RV,Stream,Baseflow,,,,,,Yes,,,,,1913,,,,
+2,,Wet Center UP,6/24/25,11:39:00 AM,RV,Stream,Baseflow,,,,,,Yes,,,,,1914,,,,
+3,,Wet Center ,7/7/25,12:00:00 PM,"RV,XG",Stream,Baseflow,Storm #11 occured between baseflow samples on 6/24 and those on 7/7,,,,,Yes,,,,,1964,,,,
+4,,Wet Center UP,7/7/25,12:00:00 PM,"RV,XG",Stream,Baseflow,,,,,,Yes,,,,,1965,,,,
+5,,Wet Center ,7/9/25,4:20:00 PM,RV,Stream,Stream_Storm,"Storm 12. Sample #1: 0.16"" of rain on 7/9 and 0.28"" on 7/10",41.30,540.40,499.10,,Yes,,,,,1973,,,,
+6,,Wet Center ,7/9/25,10:20:00 PM,RV,Stream,Stream_Storm,Storm 12. Sample #3,,535.50,,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,1975,,,,
+7,SE12_5,Wet Center ,7/10/25,4:20:00 AM,RV,Stream,Stream_Storm,Storm 12. Sample #5,,528.40,,,Yes,,,,Yes,1977,,,,09/29/25
+8,SE12_7,Wet Center ,7/10/25,10:20:00 AM,RV,Stream,Stream_Storm,Storm 12. Sample #7,,515.50,,,Yes,,,,Yes,1979,,,,09/29/25
+9,SE12_9,Wet Center ,7/10/25,4:20:00 PM,RV,Stream,Stream_Storm,Storm 12. Sample #9,,521.10,,,Yes,,,,Yes,1981,,,,09/29/25
+10,,Wet Center ,7/10/25,10:20:00 PM,RV,Stream,Stream_Storm,Storm 12. Sample #11,,,,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,1983,,,,
+11,,Wet Center ,7/11/25,4:20:00 AM,RV,Stream,Stream_Storm,Storm 12. Sample #13,,,,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,1985,,,,
+12,,Wet Center ,7/11/25,10:20:00 AM,RV,Stream,Stream_Storm,Storm 12. Sample #15,,,,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,1987,,,,
+13,,Wet Center ,7/11/25,4:20:00 PM,RV,Stream,Stream_Storm,Storm 12. Sample #17,,,,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,1989,,,,
+14,,Wet Center ,7/11/25,10:20:00 PM,RV,Stream,Stream_Storm,Storm 12. Sample #19,,,,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,1991,,,,
+15,,Wet Center ,7/12/25,4:20:00 AM,RV,Stream,Stream_Storm,Storm 12. Sample #21,,,,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,1993,,,,
+16,,Wet Center ,7/12/25,10:20:00 AM,RV,Stream,Stream_Storm,Storm 12. Sample #23,,,,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,1995,,,,
+17,SE13_P1,Wet Center,7/14/25,11:59:00 PM,RV,Precipitation,Stream_Storm,"Storm #13. First half of storm. Rain sample collected from 2:31pm-5:23PM. I put the time as 4:00PM because that's the middle point.  We collected exactly 500mL of rain in those 3 hours in the euro collector, which equals 1.38 inches of rain. This was a rapid, flash flood storm, and in this short amount of time, the WET stream gage went up about 1.5 feet.",41.58,506.30,464.72,,Yes,,,,Yes,1971,-35.05,-5.64,-2.91,11/08/25
+18,SE13_1,Wet Center,7/14/25,5:00:00 PM,RV,Stream,Stream_Storm,Storm #13. Sample 1 Intense rainfall and flash flood warning,42.00,536.20,494.20,,Yes,,,,Yes,2165,,,,11/08/25
+19,SE13_3,Wet Center,7/14/25,9:00:00 PM,RV,Stream,Stream_Storm,Storm #13. Sample 3,41.30,541.30,500.00,,Yes,,,,Yes,2167,,,,10/7/25
+20,SE13_5,Wet Center,7/15/25,1:00:00 AM,RV,Stream,Stream_Storm,Storm #13. Sample 5,41.30,547.30,506.00,,Yes,,,,Yes,2169,,,,10/7/25
+21,SE13_7,Wet Center,7/15/25,5:00:00 AM,RV,Stream,Stream_Storm,Storm #13. Sample 7,42.40,542.60,500.20,,Yes,,,,Yes,2171,,,,10/7/25
+22,SE13_9,Wet Center,7/15/25,9:00:00 AM,RV,Stream,Stream_Storm,Storm #13. Sample 9,42.30,548.80,506.50,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,2173,,,,
+23,SE13_11,Wet Center,7/15/25,1:00:00 PM,RV,Stream,Stream_Storm,Storm #13. Sample 11,41.50,546.60,505.10,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,2175,,,,
+24,SE13_13,Wet Center,7/15/25,5:00:00 PM,RV,Stream,Stream_Storm,Storm #13. Sample 13,42.30,539.20,496.90,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,2177,,,,
+25,SE13_15,Wet Center,7/15/25,9:00:00 PM,RV,Stream,Stream_Storm,Storm #13. Sample 15,41.60,541.90,500.30,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,2179,,,,
+26,SE13_17,Wet Center,7/16/25,1:00:00 AM,RV,Stream,Stream_Storm,Storm #13. Sample 17,41.50,539.40,497.90,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,2181,,,,
+27,SE13_19,Wet Center,7/16/25,5:00:00 AM,RV,Stream,Stream_Storm,Storm #13. Sample 19,41.50,542.70,501.20,,Yes,,,,Yes,2183,,,,11/08/25
+28,SE13_21,Wet Center,7/16/25,9:00:00 AM,RV,Stream,Stream_Storm,Storm #13. Sample 21,41.50,534.80,493.30,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,2185,,,,
+29,SE13_23,Wet Center,7/16/25,1:00:00 PM,RV,Stream,Stream_Storm,Storm #13. Sample 23,42.00,541.60,499.60,"Yes, subsampled 100 Ml from PFAS sample",Yes,,,,,2187,,,,
+30,,Wet Center,7/23/25,2:36 PM,RV,Stream,Baseflow,,,,,,Yes,,,,,,,,,
+31,,Wet Center UP,7/23/25,2:42 PM,RV,Stream,Baseflow,,,,,,Yes,,,,,,,,,
+32,,Wet Center,7/28/25,2:09 PM,RV,Stream,Baseflow,,,,,,Yes,,,,,,,,,
+33,,Wet Center UP,7/28/25,2:45 PM,RV,Stream,Baseflow,,,,,,Yes,,,,,,,,,
+34,,Wet Center UP,8/7/25,10:58:00 AM,"RV,XG",Stream,Baseflow,,,,,,Yes,,,,,2039,,,,
+35,,Wet Center ,8/7/25,11:07:00 AM,"RV,XG",Stream,Baseflow,,,,,,Yes,,,,,2040,,,,
+36,,Wet Center UP,8/13/25,12:02 PM,"RV,XG",Stream,Baseflow,,,,,,Yes,,,,,,,,,
+37,,Wet Center ,8/13/25,11:52 AM,"RV,XG",Stream,Baseflow,,,,,,Yes,,,,,,,,,
+38,,Wet Center UP,8/18/25,12:30 PM,"XG,EW,TN",Stream,Baseflow,Collected by XG while RV was on personal trip.,,,,,Yes,,,,,,,,,
+39,,Wet Center ,8/18/25,12:46 PM,"XG, EW, TN",Stream,Baseflow,Collected by XG while RV was on personal trip.,,,,,Yes,,,,,2084,,,,
+40,Data Lost. Method Creation error,Wet Center,8/25/25,2:44 PM,XG,Stream,Baseflow,Collected by XG while RV was on personal trip.Ran by Shane,,,,,Yes,,,,,2110,,,,8/25/25
+41,Lost. Method Creation error,Wet Center UP,8/25/25,2:34 PM,XG,Stream,Baseflow,Collected by XG while RV was on personal trip.Ran by Shane,,,,,Yes,,,,,2109,,,,8/25/25
+42,Lost. Method Creation error,Wet Center UP,8/25/25,2:34 PM,XG,Stream,Baseflow,Collected by XG while RV was on personal trip.Ran by Shane,,,,,Yes,,,,,2109,,,,8/25/25
+43,,Wet Center,9/9/25,2:04 PM,RV,Stream,Baseflow,,,,,,Yes,,,,,,,,,
+44,,Wet Center UP,9/9/25,2:00 PM,RV,Stream,Baseflow,,,,,,Yes,,,,,,,,,
+45,BF_WET_1,Wet Center,9/12/25,10:35 AM,RV,Stream,Baseflow,Collected during Agilent Interview,,513.70,,,Yes,,,,Yes,,,,,09/17/2025
+46,BF_WET_UP,Wet Center UP,9/12/25,10:59 AM,RV,Stream,Baseflow,Collected after Agilent Interview,,506.30,,,Yes,,,,Yes,,,,,09/17/2025
+47,SE14_1P,Wet Center,9/25/25,11:59:00 PM,RV,Precipitation,Stream_Storm,Storm #14 Precipitation sample.,,529.90,,,Yes,,,,Yes,2126,,,,09/29/25
+48,,Wet Center,9/26/25,5:49 PM,RV,Stream,Baseflow,Samples collected post-Storm 14.,,,,,Yes,,,,,2151,,,,
+49,,Wet Center UP,9/26/25,5:58 AM,RV,Stream,Baseflow,Samples collected post-Storm 14.,,,,,Yes,,,,,2152,,,,
+50,,Wet Center,10/8/25,11:06:00 AM,"RV, KW",Stream,Baseflow,Took sample after it rained ~0.5in from 5am-10am,41.40,543.10,501.70,Yes,Yes,Yes but with too small of a filter - only TN,no more sample,no more sample,,2189,,,,
+51,,Wet Center UP,10/8/25,11:14:00 AM,"RV, KW",Stream,Baseflow,Took sample after it rained ~0.5in from 5am-10am. Murky water being released from undocumented pipe discharging into stream,41.66,549.90,508.24,Yes,Yes,Yes but with too small of a filter - only TN,no more sample,no more sample,,2190,,,,
+52,BF_1010,Wet Center,10/10/25,8:39 AM,"RV, KW, NA",Stream,Baseflow,"Rained two days prior, really cold outside (~33 deg F)",41.50,552.40,510.90,Yes,Yes,Yes but with too small of a filter - only TN,no more sample,no more sample,Yes,,,,,11/14/25
+53,BF_UP_1010,Wet Center UP,10/10/25,8:48 AM,"RV, KW, NA",Stream,Baseflow,"Rained two days prior, really cold outside (~33 deg F)",42.10,545.40,503.30,Yes,Yes,Yes but with too small of a filter - only TN,no more sample,no more sample,Yes,,,,,11/14/25
+54,S1_1,Wet Center,10/11/25,8:53 AM,"RV, XG",Stream,Spatial,1,41.50,559.10,517.60,,Yes,,,,Yes,2194,,,,11/14/25
+55,S1_2,MR Rec Area (picnic tables),10/11/25,9:55 AM,"RV, XG",Stream,Spatial,2,41.2,560.70,519.50,,Yes,,,,Yes,2198,,,,11/16/25
+56,S1_3,Puffers Waterfall,10/11/25,10:38 AM,"RV, XG",Stream,Spatial,3,41.80,560.00,518.20,,Yes,,,,Yes,2202,,,,11/16/25
+57,S1_4,Puffers Beach,10/11/25,10:46 AM,"RV, XG",Stream,Spatial,4,41.80,540.10,498.30,,Yes,,,,Yes,2203,,,,11/16/25
+58,S1_5,Upper puffers - Railroad,10/11/25,10:59 AM,"RV, XG",Stream,Spatial,5,41.10,551.30,510.20,,Yes,,,,Yes,2205,,,,11/16/25
+59,S1_6,Haskin Meadows (fishing spot),10/11/25,11:57 AM,"RV, XG",Stream,Spatial,6,41.30,561.10,519.80,,Yes,,,,Yes,2206,,,,11/16/25
+60,S1_7,Atkins Reservoir,10/11/25,12:19 PM,"RV, XG",Stream,Spatial,7,41.50,558.20,516.70,,Yes,,,,Yes,2208,,,,11/24/25
+61,S1_8,Roaring,10/11/25,12:18 PM,"RV, XG",Stream,Spatial,8,41.70,560.30,518.60,,Yes,,,,Yes,2209,,,,11/24/25
+62,S1_9,Broad Hil,10/11/25,12:36 PM,"RV, XG",Stream,Spatial,9,41.80,554.30,512.50,,Yes,,,,Yes,2210,,,,11/24/25
+63,S1_10,Shutesbury Cemetary,10/11/25,12:48 PM,"RV, XG",Stream,Spatial,10,42.00,559.40,517.40,,Yes,,,,Yes,2211,,,,11/24/25
+64,S1_11,Doolittle,10/11/25,1:10 PM,"RV, XG",Stream,Spatial,11,41.40,550.40,509.00,,Yes,,,,Yes,2212,,,,11/24/25
+65,S1_12,Leverett Library,10/11/25,1:22 PM,"RV, XG",Stream,Spatial,12,41.10,559.60,518.50,,Yes,,,,Yes,2213,,,,11/24/25
+66,S1_13,Leverett Pond,10/11/25,1:44 PM,"RV, XG",Stream,Spatial,13,41.70,558.20,516.50,,Yes,,,,Yes,2214,,,,11/24/25
+67,S1_14,Eastman Up,10/11/25,1:55 PM,"RV, XG",Stream,Spatial,14,41.30,560.60,519.30,,Yes,,,,Yes,2215,,,,11/24/25
+68,S1_15,LW Boat Ramp,10/11/25,2:27 PM,"RV, XG",Stream,Spatial,15,41.50,563.70,522.20,,Yes,,,,Yes,2219,,,,11/24/25
+69,S1_16,Prindle School,10/11/25,2:51 PM,"RV, XG",Stream,Spatial,16,41.70,550.10,508.40,,Yes,,,,Yes,2221,,,,11/16/25
+70,S1_17,Horse Farm Down,10/11/25,3:07 PM,"RV, XG",Stream,Spatial,17,42.00,540.70,498.70,,Yes,,,,Yes,2222,,,,11/24/25
+71,S1_18,Fieldstone,10/11/25,3:29 PM,"RV, XG",Stream,Spatial,18,42.00,536.90,494.90,,Yes,,,,Yes,2225,,,,11/24/25
+72,S1_19,Wildwood Cemetary,10/11/25,3:39 PM,"RV, XG",Stream,Spatial,19,41.60,,-41.60,,Yes,,,,Yes,2226,,,,
+73,S1_20,Campus Pond Down,10/11/25,3:51 PM,"RV, XG",Stream,Spatial,20,41.40,,-41.40,,Yes,,,,Yes,2228,,,,
+74,SE15_P1,Wet Center,10/12/25,11:59 PM,RV,Precipitation,Stream_Storm,"Storm 15 Precip. Received ~0.7"". 0.28"" on 10/12 and 0.42"" on 10/13.",41.58,542.70,501.12,,Yes,Yes - all 1-24,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2291,,,,
+75,SE15_1,Wet Center,10/12/25,12:15 PM,RV,Stream,Stream_Storm,Storm 15. Sample #1,41.30,550.50,509.20,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2229,-50.22,-8.01,-3.86,
+76,SE15_3,Wet Center,10/12/25,6:15 PM,RV,Stream,Stream_Storm,Storm 15. Sample #3,41.10,529.20,488.10,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2231,-48.89,-7.79,-3.75,
+77,SE15_5,Wet Center,10/13/25,12:15 AM,RV,Stream,Stream_Storm,Storm 15. Sample #5,41.30,545.10,503.80,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2233,-45.11,-7.37,-3.41,
+78,SE15_7,Wet Center,10/13/25,6:15 AM,RV,Stream,Stream_Storm,Storm 15. Sample #7,41.90,527.90,486.00,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2235,-50.15,-7.80,-3.78,
+79,SE15_9,Wet Center,10/13/25,12:15 PM,RV,Stream,Stream_Storm,Storm 15. Sample #9,42.00,528.50,486.50,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2237,-49.65,-7.82,-3.77,
+80,SE15_11,Wet Center,10/13/25,6:15 PM,RV,Stream,Stream_Storm,Storm 15. Sample #11,41.40,547.30,505.90,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2239,-50.22,-7.96,-3.85,
+81,SE15_13,Wet Center,10/14/25,12:15 AM,RV,Stream,Stream_Storm,Storm 15. Sample #13,41.50,535.00,493.50,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2241,-49.61,-7.86,-3.85,
+82,SE15_15,Wet Center,10/14/25,6:15 AM,RV,Stream,Stream_Storm,Storm 15. Sample #15,41.10,542.10,501.00,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2243,-50.12,-7.93,-3.85,
+83,SE15_17,Wet Center,10/14/25,12:15 PM,RV,Stream,Stream_Storm,Storm 15. Sample #17,42.00,543.50,501.50,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2245,-48.01,-7.79,-3.73,
+84,SE15_19,Wet Center,10/14/25,6:15 PM,RV,Stream,Stream_Storm,Storm 15. Sample #19,42.10,543.40,501.30,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2247,-50.29,-8.08,-3.89,
+85,SE15_21,Wet Center,10/15/25,12:15 AM,RV,Stream,Stream_Storm,Storm 15. Sample #21,41.20,554.00,512.80,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2249,-50.30,-8.11,-3.95,11/14/25
+86,SE15_23,Wet Center,10/15/25,6:15 AM,RV,Stream,Stream_Storm,Storm 15. Sample #23,42.20,541.80,499.60,,Yes,Yes,Yes evens (so NOT the ones that are PFAs),Yes evens (so NOT the ones that are PFAs),Yes,2251,-50.02,-8.08,-3.73,11/14/25
+87,S2_1,MR Rec Area (picnic tables),10/15/25,7:19 AM,RV,Stream,Spatial,1,41.30,563.80,522.50,,Yes,,,,Yes,2263,,,,11/24/25
+88,S2_2,Puffers Waterfall,10/15/25,7:48 AM,RV,Stream,Spatial,2,41.40,,,,Yes,,,,,2267,,,,
+89,S2_3,Puffers Beach,10/15/25,7:55 AM,RV,Stream,Spatial,3,41.30,,,,Yes,,,,,2268,,,,
+90,S2_4,Upper puffers - Railroad,10/15/25,8:07 AM,RV,Stream,Spatial,4,42.10,,,,Yes,,,,,2270,,,,
+91,S2_5,Haskin Meadows (fishing spot),10/15/25,8:16 AM,RV,Stream,Spatial,5,41.90,,,,Yes,,,,,2271,,,,
+92,S2_6,Atkins Reservoir,10/15/25,8:34 AM,RV,Stream,Spatial,6,41.10,,,,Yes,,,,,2273,,,,
+93,S2_7,Roaring,10/15/25,8:43 AM,RV,Stream,Spatial,7,41.30,,,,Yes,,,,,2274,,,,
+94,S2_8,Broad Hil,10/15/25,8:50 AM,RV,Stream,Spatial,8,41.20,,,,Yes,,,,,2275,,,,
+95,S2_9,Shutesbury Cemetary,10/15/25,9:01 AM,RV,Stream,Spatial,9,41.70,,,,Yes,,,,,2276,,,,
+96,S2_10,Doolittle,10/15/25,9:22 AM,RV,Stream,Spatial,10,41.80,,,,Yes,,,,,2277,,,,
+97,S2_11,Leverett Library,10/15/25,9:33 AM,RV,Stream,Spatial,11,41.30,,,,Yes,,,,,2278,,,,
+98,S2_12,Leverett Pond,10/15/25,9:44 AM,RV,Stream,Spatial,12,41.60,,,,Yes,,,,,2279,,,,
+99,S2_13,Eastman Up,10/15/25,9:59 AM,RV,Stream,Spatial,13,41.50,,,,Yes,,,,,2280,,,,
+100,S2_14,LW Boat Ramp,10/15/25,1:50 PM,RV,Stream,Spatial,14,41.40,,,,Yes,,,,,2284,,,,
+101,S2_15,Prindle School,10/15/25,2:20 PM,RV,Stream,Spatial,15,41.40,,,,Yes,,,,,2285,,,,
+102,S2_16,Horse Farm Up,10/15/25,2:30 PM,RV,Stream,Spatial,16,41.20,,,,Yes,,,,,2286,,,,
+103,S2_17,Fieldstone,10/15/25,2:47 PM,RV,Stream,Spatial,17,41.80,,,,Yes,,,,,2289,,,,
+104,,Wet Center,10/17/25,9:22:00 AM,RV,Stream,Baseflow,,41.30,,,Yes,Yes,Yes - no TN,No (no more sample),No (no more sample),,2292,,,,
+105,,Wet Center UP,10/17/25,9:30:00 AM,RV,Stream,Baseflow,,41.40,,,Yes,Yes,Yes - no TN,No (no more sample),No (no more sample),,2293,,,,
+,,Roaring ,10/18/25,10:57:00 AM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2295,,,,
+,,Doolittle,10/18/25,11:14:00 AM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2296,,,,
+,,Eastman Up ,10/18/25,11:35:00 AM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2297,,,,
+,,Eastman Down,10/18/25,1:18:00 PM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2298,,,,
+,,Lake Warner Outlet,10/18/25,2:01:00 PM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2299,,,,
+,,Knightly,10/18/25,1:39:00 PM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2300,,,,
+,,Campus Pond Up ,10/18/25,1:18:00 PM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2301,,,,
+,,Horse Down,10/18/25,11:58:00 PM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2302,,,,
+,,Horse Up,10/18/25,12:31:00 PM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2303,,,,
+,,Tan Brook Down,10/18/25,11:13:00 AM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2304,,,,
+,,Campus Pond Down,10/18/25,1:32:00 PM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2305,,,,
+,,Tan Brook Up ,10/18/25,12:51:00 PM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2306,,,,
+,,Mill Site,10/18/25,2:27:00 PM,"RV, TN, CG, XG",Stream,13-Site,,N/A,,,Yes,NO,Yes,Yes,Yes,NO,2307,,,,
+106,,Wet Center,10/24/25,10:07:00 AM,1,RV,Baseflow,,42.22,544.80,502.58,Yes,Yes,Yes,Yes,Yes,,2321,,,,
+107,,Wet Center UP,10/24/25,10:14:00 AM,1,RV,Baseflow,,41.51,546.90,505.39,Yes,Yes,Yes,Yes,Yes,,2322,,,,
+108,SE16_P1_H,Wet Center,10/29/25,11:12:00 AM,"XG, ZW",Precipitation,Stream Storm,Storm 16 bulk. Homemade precip collector,41.15,551.80,510.65,Yes,Yes,Yes,Yes,Yes,Yes,2323,,,,
+109,SE16_P1_E,Wet Center,10/21/25,11:12:00 AM,"XG, ZW",Precipitation,Stream Storm,Storm 16 bulk Precip. Euro precip collector. Collected a small storm on October 12 and wasn't replaced ,41.03,565.30,524.27,Yes,Yes,Yes,Yes,Yes,Yes,2324,,,,
+110,SE16_1,Wet Center,10/30/25,3:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 1,41.74,539.70,497.96,Yes,Yes,Yes,Yes,Yes,Yes,2325,,,,2/15/26
+111,SE16_2,Wet Center,10/30/25,5:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 2,41.60,558.90,517.30,Yes,Yes,Yes,Yes,Yes,Yes,2326,,,,2/25/26
+112,SE16_3,Wet Center,10/30/25,7:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 3,41.72,535.60,493.88,Yes,Yes,Yes,Yes,Yes,Yes,2327,,,,2/25/26
+113,SE16_4,Wet Center,10/30/25,9:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 4,42.15,544.10,501.95,Yes,Yes,Yes,Yes,Yes,Yes,2328,,,,2/25/26
+114,SE16_5,Wet Center,10/30/25,11:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 5,42.33,562.20,519.87,Yes,Yes,Yes,Yes,Yes,Yes,2329,,,,2/25/26
+115,SE16_6,Wet Center,10/30/25,1:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 6,41.67,540.70,499.03,Yes,Yes,Yes,Yes,Yes,Yes,2330,,,,2/25/26
+116,SE16_7,Wet Center,10/30/25,3:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 7,41.67,564.30,522.63,Yes,Yes,Yes,Yes,Yes,Yes,2331,,,,2/25/26
+117,SE16_8,Wet Center,10/30/25,5:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 8,41.56,539.70,498.14,Yes,Yes,Yes,Yes,Yes,Yes,2332,,,,2/25/26
+118,SE16_9,Wet Center,10/30/25,7:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 9,41.87,556.40,514.53,Yes,Yes,Yes,Yes,Yes,Yes,2333,,,,3/7/26
+119,SE16_10,Wet Center,10/30/25,9:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 10,42.09,547.00,504.91,Yes,Yes,Yes,Yes,Yes,Yes,2334,,,,3/7/26
+120,SE16_11,Wet Center,10/30/25,11:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 11,41.65,541.70,500.05,Yes,Yes,Yes,Yes,Yes,Yes,2335,,,,3/7/26
+121,SE16_12,Wet Center,10/31/25,1:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 12,42.23,545.90,503.67,Yes,Yes,Yes,Yes,Yes,Yes,2336,,,,3/7/26
+122,SE16_13,Wet Center,10/31/25,3:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 13,41.42,536.50,495.08,Yes,Yes,Yes,Yes,Yes,Yes,2337,,,,3/7/26
+123,SE16_14,Wet Center,10/31/25,5:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 14,41.39,549.80,508.41,Yes,Yes,Yes,Yes,Yes,Yes,2338,,,,3/7/26
+124,SE16_15,Wet Center,10/31/25,7:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 15,41.43,553.00,511.57,Yes,Yes,Yes,Yes,Yes,Yes,2339,,,,3/7/26
+125,SE16_16,Wet Center,10/31/25,9:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 16,41.47,562.10,520.63,Yes,Yes,Yes,Yes,Yes,Yes,2340,,,,3/7/26
+126,SE16_17,Wet Center,10/31/25,11:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 17,41.44,571.90,530.46,Yes,Yes,Yes,Yes,Yes,Yes,2341,,,,3/7/26
+127,SE16_18,Wet Center,10/31/25,1:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 18,42.29,548.30,506.01,Yes,Yes,Yes,Yes,Yes,Yes,2342,,,,3/7/26
+128,SE16_19,Wet Center,10/31/25,3:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 19,41.45,569.30,527.85,Yes,Yes,Yes,Yes,Yes,Yes,2343,,,,3/7/26
+129,SE16_20,Wet Center,10/31/25,5:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 20,41.31,559.40,518.09,Yes,Yes,Yes,Yes,Yes,Yes,2344,,,,3/7/26
+130,SE16_21,Wet Center,10/31/25,7:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 21,41.68,539.50,497.82,Yes,Yes,Yes,Yes,Yes,Yes,2345,,,,3/7/26
+131,SE16_22,Wet Center,10/31/25,9:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 22,41.46,548.30,506.84,Yes,Yes,Yes,Yes,Yes,Yes,2346,,,,3/7/26
+132,SE16_23,Wet Center,10/31/25,11:40:00 PM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 23,41.53,,,Yes,Yes,Yes,Yes,Yes,In Progress. SPE'd on 3/30,2347,,,,
+133,SE16_24,Wet Center,11/1/25,1:40:00 AM,"XG, ZW",Stream,Stream Storm,Storm 16: Sample 24,41.48,,,Yes,Yes,Yes,Yes,Yes,In Progress. SPE'd on 3/30,2348,,,,
+134,BF_1031,Wet Center,10/31/25,8:49:00 AM,"ZW, TN",Stream,Baseflow,During storm 16.,42.10,,,Yes,Yes,Yes,Yes,Yes,Yes,2349,,,,11/14/25
+135,BF_UP_1031,Wet Center UP,10/31/25,9:02:00 AM,"ZW, TN",Stream,Baseflow,Taken straight from the mystery outflow pipe!,41.30,537.00,495.70,Yes,Yes,Yes,Yes,Yes,Yes,2350,,,,
+136,,Wet Center,11/03/25,6:00 PM,"RV, ZW",Stream,Baseflow,After storm 16,41.19,,-41.19,Yes,Yes,Yes,Yes,Yes,,2351,,,,
+137,SE16_Post,Wet Center,11/04/25,1:26 PM,"RV, ZW",Stream,Baseflow,"Quick and heavy thunderstorm the night before. ~0.17"" rain",41.34,556.60,515.26,Yes,Yes,Yes,Yes,Yes,Yes,2352,,,,2/15/26
+138,,Wet Center,11/05/25,2:20 PM,"RV, XG",Stream,Baseflow,,41.58,,-41.58,Yes,Yes,Yes,Yes,Yes,,2354,,,,
+139,,Wet Center,11/7/25,8:54:00 AM,"RV, NA",Stream,Baseflow,,41.58,,-41.58,Yes,Yes,Yes,Yes,Yes,,2355,,,,
+140,,Wet Center UP,11/7/25,8:43:00 AM,"RV, NA",Stream,Baseflow,,41.98,,-41.98,Yes,Yes,Yes,Yes,Yes,,2356,,,,
+141,,Wet Center,11/14/25,8:57:00 AM,RV,Stream,Baseflow,,42.30,,-42.30,Yes,Yes,Yes,Yes,Yes,,2357,,,,
+142,,Wet Center UP,11/14/25,8:40:00 AM,RV,Stream,Baseflow,,42.20,,-42.20,Yes,Yes,Yes,Yes,Yes,,2358,,,,
+143,,Equipment Blank,11/16/25,1:00 PM,RV,MilliQ,Equipment Blank,EB on Precip Collector #2. ,41.50,555.30,513.80,,Yes,,,,Yes,,,,,11/16/25
+142,,Wet Center,11/21/25,6:45:00 AM,RV,Stream,Baseflow,,,,0.00,Yes,Yes,Yes,Yes,Yes,,2375,,,,
+145,,Wet Center UP,11/21/25,6:55:00 AM,RV,Stream,Baseflow,,,,,Yes,Yes,Yes,Yes,Yes,,2376,,,,
+146,EB_PCE,Equipment Blank,11/24/25,2:30 PM,RV,MilliQ,Equipment Blank,EB on European collector,41.70,476.90,435.20,,Yes,,,,Yes,,,,,
+147,EB_PC1,Equipment Blank,11/24/25,2:30 PM,RV,MilliQ,Equipment Blank,EB on Precip Collector #1,41.30,561.50,520.20,,Yes,,,,Yes,,,,,
+143,R_N25,Roaring,11/15/25,10:42 AM,"RV, XG",Stream,13-Site,,41.50,559.70,518.20,Yes,Yes,Yes,Yes,Yes,Yes,2361,,,,01/28/25
+144,D_N25,Doolittle,11/15/25,10:48 AM,"RV, XG",Stream,13-Site,,41.40,547.50,506.10,Yes,Yes,Yes,Yes,Yes,Yes,2362,,,,01/28/25
+145,EU_N25,Eastman Up,11/15/25,11:24 AM,"RV, XG",Stream,13-Site,,41.50,544.60,503.10,Yes,Yes,Yes,Yes,Yes,Yes,2363,,,,01/28/25
+146,ED_N25,Eastman Down,11/15/25,1:08 PM,"RV, XG",Stream,13-Site,,41.30,547.90,506.60,Yes,Yes,Yes,Yes,Yes,Yes,2364,,,,01/28/25
+147,MS_N25,Mill site,11/15/25,11:45 AM,"RV, XG",Stream,13-Site,,42.40,554.20,511.80,Yes,Yes,Yes,Yes,Yes,Yes,2365,,,,01/28/25
+148,K_N25,Knightly,11/15/25,12:46 PM,"RV, XG",Stream,13-Site,,41.70,527.30,485.60,Yes,Yes,Yes,Yes,Yes,Yes,2366,,,,01/28/25
+149,LW_N25,Lake Warner Outlet,11/15/25,12:26 PM,"RV, XG",Stream,13-Site,,42.20,541.80,499.60,Yes,Yes,Yes,Yes,Yes,Yes,2367,,,,01/28/25
+150,CD_N25,Campus Pond Down,11/15/25,5:42 PM,"TN, KW",Stream,13-Site,,41.40,496.50,455.10,Yes,Yes,Yes,Yes,Yes,Yes,2368,,,,01/28/25
+151,CU_N25,Campus Pond Up,11/15/25,6:42 PM,"TN, KW",Stream,13-Site,,42.20,520.60,478.40,Yes,Yes,Yes,Yes,Yes,Yes,2369,,,,01/28/25
+152,TD_N25,Tan Brook Down,11/15/25,7:42 PM,"TN, KW",Stream,13-Site,,42.20,548.50,506.30,Yes,Yes,Yes,Yes,Yes,Yes,2370,,,,01/28/25
+153,HD_N25,Horse Down,11/15/25,8:42 PM,"TN, KW",Stream,13-Site,,41.40,529.80,488.40,Yes,Yes,Yes,Yes,Yes,Yes,2371,,,,01/28/25
+154,HU_N25,Horse Up ,11/15/25,9:42 PM,"TN, KW",Stream,13-Site,,42.50,532.70,490.20,Yes,Yes,Yes,Yes,Yes,Yes,2372,,,,01/28/25
+155,TU_N25,Tan Brook Up ,11/15/25,10:42 PM,"TN, KW",Stream,13-Site,,41.10,515.70,474.60,Yes,Yes,Yes,Yes,Yes,Yes,2373,,,,01/28/25
+,B2_128,Blank,1/28/26,,RV,MilliQ,Blank,,41.80,543.10,501.30,,,,,,Yes,,,,,
+,,Wet Center,11/28/25,12:10 PM,RV,Stream,Baseflow,,42.10,,,Yes,Yes,Yes,Yes,Yes,,2391,,,,
+,,WC Upstream,11/28/25,12:00 PM,RV,Stream,Baseflow,,41.50,,,Yes,Yes,Yes,Yes,Yes,,2392,,,,
+,,E-Lab II,12/2/25,4:32 PM,RV,Snow,Precip,Snowed 5 inches,41.20,,,Yes,Yes,Yes,Yes,Yes,,2393,,,,
+,R_D25,Roaring,12/6/25,10:54 AM,"TN, RV, KW, ZW",Stream,13-Site,,41.60,580.40,538.80,Yes,Yes,Yes,Yes,Yes,Yes,2405,,,,02/15/26
+,D_D25,Doolittle,12/6/25,11:07 AM,"TN, RV, KW, ZW",Stream,13-Site,,41.70,569.40,527.70,Yes,Yes,Yes,Yes,Yes,Yes,2406,,,,02/15/26
+,EU_D25,Eastman Up,12/6/25,11:31 AM,"TN, RV, KW, ZW",Stream,13-Site,,42.40,566.30,523.90,Yes,Yes,Yes,Yes,Yes,Yes,2407,,,,02/15/26
+,K_D25,Knightly,12/6/25,12:05 PM,"TN, RV, KW, ZW",Stream,13-Site,,42.40,577.80,535.40,Yes,Yes,Yes,Yes,Yes,Yes,2408,,,,02/15/26
+,LW_D25,Lake Warner Outlet,12/6/25,11:50 AM,"TN, RV, KW, ZW",Stream,13-Site,,42.00,568.50,526.50,Yes,Yes,Yes,Yes,Yes,Yes,2409,,,,02/15/26
+,MS_D25,Mill Site,12/6/25,12:20 PM,"TN, RV, KW, ZW",Stream,13-Site,,41.60,572.80,531.20,Yes,Yes,Yes,Yes,Yes,Yes,2410,,,,02/15/26
+,HD_D25,Horse Down,12/6/25,11:32 AM,"TN, RV, KW, ZW",Stream,13-Site,,41.80,520.70,478.90,Yes,Yes,Yes,Yes,Yes,Yes,2422,,,,02/15/26
+,HU_D25,Horse Up ,12/6/25,12:05 PM,"TN, RV, KW, ZW",Stream,13-Site,,42.10,527.50,485.40,Yes,Yes,Yes,Yes,Yes,Yes,2421,,,,02/15/26
+,TBU_D25,Tan Brook Up ,12/6/25,12:29 PM,"TN, RV, KW, ZW",Stream,13-Site,,41.40,527.60,486.20,Yes,Yes,Yes,Yes,Yes,Yes,2420,,,,02/15/26
+,CPU_D25,Campus Pond Up,12/6/25,12:45 PM,"TN, RV, KW, ZW",Stream,13-Site,,42.20,496.20,454.00,Yes,Yes,Yes,Yes,Yes,Yes,2416,,,,02/15/26
+,TBD_D25,Tan Brook Down,12/6/25,10:50 AM,"TN, RV, KW, ZW",Stream,13-Site,,41.30,533.00,491.70,Yes,Yes,Yes,Yes,Yes,Yes,2419,,,,02/15/26
+,WC_D25,Wet Center,12/6/25,11:10 AM,"TN, RV, KW, ZW",Stream,13-Site,,42.20,523.40,481.20,Yes,Yes,Yes,Yes,Yes,Yes,2417,,,,02/15/26
+,B1_215,Blank,2/15/26,,RV,MilliQ,Blank,Dec2025 samples,42.00,541.80,499.80,,,,,,Yes,,,,,02/15/26
+,B2_215,Blank,2/15/26,,RV,MilliQ,Blank,Dec2025 samples,41.99,542.20,500.21,,,,,,Yes,,,,,02/15/26
+,,Wet Center,12/12/25,10:40 AM,"RV, KW",Stream,Baseflow,,,,,Yes,Yes,Yes,Yes,Yes,,2432,,,,
+,,WC Upstream,12/12/25,10:49 AM,"RV,KW",Stream,Baseflow,,,,,Yes,Yes,Yes,Yes,Yes,,2433,,,,
+,,Wet Center,12/19/25,9:56 AM,"KW, ZW",Stream,Baseflow,,41.83,561.70,519.87,Yes,Yes,Yes,Yes,Yes,Yes,2434,,,,
+,,WC Upstream,12/19/25,10:05 AM,"KW, ZW",Stream,Baseflow,,41.91,555.30,513.39,Yes,Yes,Yes,Yes,Yes,Yes,2435,,,,
+,,Wet Center,1/10/26,1:38 PM,"RV, KW",Stream,Baseflow,,42.78,,,Yes,Yes,Yes,Yes,Yes,,2434,,,,
+,,WC Upstream,1/10/26,1:33 PM,"RV, KW",Stream,Baseflow,,42.23,,,Yes,Yes,Yes,Yes,Yes,,2435,,,,
+,,Eastman Up,1/15/26,10:13 AM,"RV,KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2438,,,,
+,,Horse Down,1/15/26,1:44 PM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2446,,,,
+,,Mill Site,1/15/26,11:27 AM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2442,,,,
+,,Knightly,1/15/26,10:47 AM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2440,,,,
+,,Tan Brook Up ,1/15/26,12:02 PM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2444,,,,
+,,Doolittle,1/15/26,9:50 AM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2437,,,,
+,,Eastman Down,1/15/26,10:30 AM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2439,,,,
+,,Horse Up ,1/15/26,10:43 AM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2443,,,,
+,,Lake Warner Outlet,1/15/26,11:11 AM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2441,,,,
+,,Roaring,1/15/26,9:30 AM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2436,,,,
+,,Tan Brook Down,1/15/26,1:25 PM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2445,,,,
+,,Campus Pond Down,1/15/26,2:13 PM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2448,,,,
+,,Campus Pond Up,1/15/26,1:58 PM,"RV, KW",Stream,13-Site,,,,,Yes,Yes,Yes,Yes,Yes,,2447,,,,
+,BF_0120,Wet Center,1/20/26,2:12 PM,RV,Stream,Baseflow,,41.77,552.90,511.13,Yes,Yes,Yes,Yes,Yes,Yes,Missing?,,,,01/28/25
+,,Wet Center,1/23/26,4:18,RV,Stream,Baseflow,,41.50,,-41.50,Yes,Yes,Yes,Yes,Yes,,Missing?,,,,
+,,Wet Center,1/29/26,9:30,RV,Stream,Baseflow,,41.50,,-41.50,Yes,Yes,Yes,Yes,Yes,,2451,,,,
+,,Eastman Down,2/21/26,12:21,"RV, OW",Stream,13-Site,Bad day! snow made it so that very few sites were actually accessible,41.58,,,,,,,,,,,,,
+,,Knightly,2/21/26,12:40,"RV, OW",Stream,13-Site,The tare weight wasn't taken for each bottle. Assuming the mean weight...,41.58,,,,,,,,,,,,,
+,,Tan Brook Up ,2/21/26,,"TN, SH, JC",Stream,13-Site,Asumption. Tare weight,41.58,,,,,,,,,,,,,
+,,Wet Center,2/21/26,11:04,"RV, OW",Stream,13-Site,Asumption. Tare weight,41.58,,,,,,,,,,,,,
+,,Tan Brook Down,2/21/26,,"TN, SH, JC",Stream,13-Site,Asumption. Tare weight,41.58,,,,,,,,,,,,,
+,,Eastman Up,2/21/26,11:56,"RV, OW",Stream,13-Site,Asumption. Tare weight,41.58,,,,,,,,,,,,,
+,,Campus Pond Up,2/21/26,,"TN, SH, JC",Stream,13-Site,Asumption. Tare weight,41.58,,,,,,,,,,,,,
+,,Lake Warner Outlet,2/21/26,,"TN, SH, JC",Stream,13-Site,Asumption. Tare weight,41.58,,,,,,,,,,,,,
+,,Mill Site,2/21/26,12:59,"RV, OW",Stream,13-Site,Asumption. Tare weight,41.58,,,,,,,,,,,,,
+,B1_225,Blank,2/25/26,,RV,MilliQ,Blank,SPE blank. for samples SE16_2 through 8.,41.80,540.20,498.40,,,,,,Yes,,,,,
+,,Wet Center,2/27/26,8:30 AM,RV,Stream,Baseflow,,42.00,,-42.00,Yes,Yes,,,,,,,,,
+,B1_306,Blank,3/6/26,,RV,MilliQ,Blank,SPE blank. for samples SE16_9 through 15.,42.42,539.31,496.89,,,,,,Yes,,,,,
+,B1_307,Blank,3/7/26,,RV,MilliQ,Blank,SPE blank. for samples SE16_16 through 20.,42.10,538.10,496.00,,,,,,Yes,,,,,
+,,Wet Center,3/4/26,9:55 AM,RV,Stream,Baseflow,Snowed in the morning ,42.00,,-42.00,Yes,Yes,,,,,,,,,
+,,Wet Center,3/4/26,12:21 PM,"RV, JC, OW",Stream,Baseflow,Rapid snow melt,41.99,,-41.99,Yes,Yes,,,,,,,,,
+,,Wet Center,3/4/26,2:25 PM,"RV, JC ",Stream,Baseflow,"high in 50s, more snowmelt",42.06,,-42.06,Yes,Yes,,,,,,,,,
+,,Wet center,3/9/26,2:37 PM,"RV, JC, OW",Stream,Baseflow,High in 60s. Even MORE snowmelt,42.36,,-42.36,Yes,Yes,,,,,,,,,
+,,Wet center,3/16/26,3:40 PM,RV,Stream,Baseflow,Very high flow. ~3.5 ft depth,42.02,,-42.02,Yes,Yes,,,,,,,,,
+,,Wet center,3/23/36,2:30 PM,"RV, JC, OW",Stream,Baseflow,Very high flow. ~3.45 ft depth,41.98,,-41.98,Yes,Yes,,,,,,,,,
+,TU_M26,Tan Brook Up ,3/28/26,9:29:00 AM,"OW, KW",Stream,13-Site,13 site and spatial on same day.,42.25,555.86,513.61,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,CU_M26,Campus Pond UP,3/28/26,9:51:00 AM,"OW, KW",Stream,13-Site,,42.47,560.42,517.95,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,CD_M26,Campus Pond Down,3/28/26,10:03:00 AM,"OW, KW",Stream,13-Site,,42.22,570.00,527.78,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,R_M26,Roaring,3/28/26,10:37:00 AM,"OW, KW",Stream,13-Site,,42.23,562.60,520.37,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,D_M26,Doolittle,3/28/26,10:56:00 AM,"OW, KW",Stream,13-Site,,42.23,578.72,536.49,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,EU_M26,Eastman Up,3/28/26,11:26:00 AM,"OW, KW",Stream,13-Site,,42.28,561.45,519.17,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,ED_M26,Eastman Down,3/28/26,11:53:00 AM,"OW, KW",Stream,13-Site,,42.18,576.12,533.94,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,K_M26,Knightly,3/28/26,12:24:00 PM,"OW, KW",Stream,13-Site,,42.17,556.19,514.02,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,MS_M26,Mill Site,3/28/26,12:45:00 PM,"OW, KW",Stream,13-Site,,42.26,571.67,529.41,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,LW_M26,Lake Warner Outlet,3/28/26,1:17:00 AM,"OW, KW",Stream,13-Site,,42.07,578.91,536.84,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,HU_M26,Horse Up,3/28/26,1:44:00 PM,"OW, KW",Stream,13-Site,,42.32,564.91,522.59,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,HD_M26,Horse Down,3/28/26,2:02:00 PM,"OW, KW",Stream,13-Site,,41.58,569.06,527.48,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,WC_M26,Wet Center,3/28/26,2:22:00 PM,"OW, KW",Stream,Baseflow,,42.14,588.54,546.40,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,TD_M26,Tan Brook Down,3/28/26,2:40:00 PM,"OW, KW",Stream,13-Site,,42.43,578.35,535.92,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,B1_329,Blank,3/29/26,,RV,MilliQ,Blank,SPE blank. for samples March 13 sites +WC.,42.38,549.72,507.34,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,B2_329,Blank,3/29/26,,RV,MilliQ,Blank,SPE blank. for samples March 13 sites +WC.,41.77,548.12,506.35,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,B1_S3,Blank,3/30/26,,RV,MilliQ,Blank,SPE Blank for S3,42.12,547.90,505.78,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_14,UMass Farm,3/28/26,9:39 AM,"RV, SH",Stream,Spatial,,42.11,551.61,509.50,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_15,Brandywine Pond,3/28/26,9:51 AM,"RV, SH",Stream,Spatial,,42.27,572.72,530.45,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_16,MR Julius Bridge,3/28/26,10:08 AM,"RV, SH",Stream,Spatial,,42.29,567.55,525.26,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_17,Puffers Waterfall,3/28/26,10:32 AM,"RV, SH",Stream,Spatial,,41.96,584.54,542.58,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_18,Puffers Pond Beach,3/28/26,10:42 AM,"RV, SH",Stream,Spatial,,42.02,564.38,522.36,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_19,Puffers Railroad,3/28/26,10:56 AM,"RV, SH",Stream,Spatial,,42.14,583.85,541.71,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_20,Haskins Meadows,3/28/26,12:05 PM,"RV, SH",Stream,Spatial,,42.13,569.39,527.26,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_21,Haskins Meadows Up,3/28/26,12:15 PM,"RV, SH",Stream,Spatial,,42.38,558.29,515.91,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,B2_S3,Blank,,,RV,MilliQ,Blank,SPE Blank for S3,42.13,548.30,506.17,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_22,Atkins Reservoir,3/28/26,12:33 PM,"RV, SH",Stream,Spatial,,42.09,574.36,532.27,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_23,Dean Brook,3/28/26,12:44 PM,"RV, SH",Stream,Spatial,,42.43,567.36,524.93,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_24,Nurse Brook,3/28/26,12:56 PM,"RV, SH",Stream,Spatial,,42.45,538.72,496.27,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_25,Shutesbury Cemetery,3/28/26,1:17 PM,"RV, SH",Stream,Spatial,,42.30,535.87,493.57,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_26,Broad Hil,3/28/26,1:30 PM,"RV, SH",Stream,Spatial,,42.63,568.94,526.31,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_27,Number 6 Rd,3/28/26,1:41 PM,"RV, SH",Stream,Spatial,,42.29,557.16,514.87,Yes,Yes,,,,In Progress. Carbon + Filtered on 4/3. Needs IS spike,,,,,
+,S3_28,Leverett Library,3/28/26,2:00 PM,"RV, SH",Stream,Spatial,,42.03,571.27,529.24,Yes,Yes,,,,In Progress. SPE'd on 3/30,,,,,
+,S3_29,Leverett Pond,3/28/26,2:25 PM,"RV, SH",Stream,Spatial,,42.45,523.23,480.78,Yes,Yes,,,,In Progress. SPE'd on 3/30,,,,,
+,B3_S3,Blank,,,RV,MilliQ,Blank,SPE Blank for S3,42.30,547.50,505.20,Yes,Yes,,,,In Progress. SPE'd on 3/30,,,,,
+,S3_30,MR Montague Bridge,3/28/26,2:42 PM,"RV, SH",Stream,Spatial,,42.09,520.73,478.64,Yes,Yes,,,,In Progress. SPE'd on 3/30,,,,,
+,S3_31,Lake Warner Trail,3/28/26,3:17 PM,"RV, SH",Stream,Spatial,,42.09,550.00,507.91,Yes,Yes,,,,In Progress. SPE'd on 3/30,,,,,
+,S3_32,Prindle School,3/28/26,3:38 PM,"RV, SH",Stream,Spatial,,42.23,571.56,529.33,Yes,Yes,,,,In Progress. SPE'd on 3/30,,,,,
+,,Wet Center,3/30/26,4:10 PM,"JC,RV",Stream,Baseflow,"High 60s, all snow melted ",42.07,,,Yes,Yes,,,,,,,,,
