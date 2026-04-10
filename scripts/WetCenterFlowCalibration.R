@@ -638,3 +638,237 @@ ggplot() +
   theme_bw() +
   theme(legend.position  = "bottom",
         axis.text.x      = element_text(angle = 45, hjust = 1))
+
+
+
+# ============================================================
+# STORM DETECTION + HYDROGRAPH SEPARATION
+# ============================================================
+
+library(zoo)  # for rolling mean
+
+# --- 1. storm_find() ---
+storm_find <- function(flow_data,
+                       time_col     = "Time",
+                       flow_col     = "Flow",
+                       baseline_days = 3,     # rolling window for baseflow estimate
+                       rise_factor  = 2.0,    # flow must exceed N x baseline to flag storm
+                       min_duration_hrs = 6,  # minimum hours above threshold to count
+                       recession_factor = 1.1,# storm ends when flow drops to N x baseline
+                       min_gap_hrs  = 12) {   # minimum hours between separate storms
+  
+  df <- flow_data %>%
+    rename(Time = all_of(time_col), Flow = all_of(flow_col)) %>%
+    arrange(Time)
+  
+  # Rolling baseline: mean of preceding N days
+  baseline_n <- baseline_days * 24 * 6  # 10-min intervals per day
+  df <- df %>%
+    mutate(
+      Baseline = rollapply(Flow, width = baseline_n,
+                           FUN = mean, na.rm = TRUE,
+                           align = "right", fill = NA),
+      Above_threshold = Flow > (Baseline * rise_factor)
+    )
+  
+  # Find contiguous blocks above threshold
+  df <- df %>%
+    mutate(
+      block_id = cumsum(!Above_threshold | is.na(Above_threshold))
+    )
+  
+  # Identify storm blocks meeting minimum duration
+  storm_blocks <- df %>%
+    filter(Above_threshold) %>%
+    group_by(block_id) %>%
+    summarise(
+      start    = min(Time),
+      end      = max(Time),
+      peak     = max(Flow),
+      peak_time = Time[which.max(Flow)],
+      duration_hrs = as.numeric(difftime(max(Time), min(Time), units = "hours")),
+      .groups = "drop"
+    ) %>%
+    filter(duration_hrs >= min_duration_hrs)
+  
+  # Merge storms that are too close together
+  if (nrow(storm_blocks) > 1) {
+    storm_blocks <- storm_blocks %>%
+      arrange(start) %>%
+      mutate(
+        gap_to_next = as.numeric(difftime(lead(start), end, units = "hours")),
+        new_storm   = is.na(lag(gap_to_next)) | lag(gap_to_next) > min_gap_hrs
+      ) %>%
+      mutate(storm_id = cumsum(new_storm)) %>%
+      group_by(storm_id) %>%
+      summarise(
+        start     = min(start),
+        end       = max(end),
+        peak      = max(peak),
+        peak_time = peak_time[which.max(peak)],
+        duration_hrs = as.numeric(difftime(max(end), min(start), units = "hours")),
+        .groups = "drop"
+      )
+  }
+  
+  # Add baseline flow at storm start (pre-event flow endmember reference)
+  storm_blocks <- storm_blocks %>%
+    mutate(
+      storm_id       = row_number(),
+      baseline_flow  = map_dbl(start, ~ {
+        df %>%
+          filter(Time >= .x - days(baseline_days), Time < .x) %>%
+          summarise(m = mean(Flow, na.rm = TRUE)) %>%
+          pull(m)
+      })
+    )
+  
+  return(list(storms = storm_blocks, flow_flagged = df))
+}
+
+# --- Run storm_find ---
+result <- storm_find(
+  WetCenter_Flow_Combined,
+  baseline_days    = 3,
+  rise_factor      = 1.5,
+  min_duration_hrs = 6,
+  min_gap_hrs      = 12
+)
+
+storms_detected <- result$storms
+flow_flagged    <- result$flow_flagged
+
+print(paste("Storms detected:", nrow(storms_detected)))
+print(storms_detected %>% select(storm_id, start, end, peak, duration_hrs))
+
+# --- 2. Plot detected storms on hydrograph ---
+ggplot() +
+  geom_rect(data = storms_detected,
+            aes(xmin = start, xmax = end,
+                ymin = -Inf, ymax = Inf),
+            fill = "steelblue", alpha = 0.2) +
+  geom_line(data = WetCenter_Flow_Combined,
+            aes(x = Time, y = Flow, color = Source),
+            linewidth = 0.6) +
+  geom_point(data = storms_detected,
+             aes(x = peak_time, y = peak),
+             color = "red", size = 3) +
+  geom_point(data = WetCenter_samples,
+             aes(x = DateTime, y = Flow),
+             color = "red", size = 2, alpha = 0.7) +
+  scale_color_manual(values = c("TimeView" = "darkorange",
+                                "Pressure Transducer" = "steelblue")) +
+  scale_x_datetime(date_labels = "%b %Y", date_breaks = "1 month",
+                   expand = c(0, 0)) +
+  labs(title = "Detected Storms — Mill River",
+       x = "Date/Time", y = "Discharge (m³/s)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+# --- 3. Check which storms have enough isotope observations ---
+# You'll need to load your isotope data here
+# Expected format: DateTime, d18O_stream, d2H_stream, d18O_precip, d2H_precip
+
+check_storm_isotopes <- function(storms, isotope_data,
+                                 min_observations = 8) {
+  storms %>%
+    mutate(
+      n_isotope_obs = map_int(1:nrow(storms), ~ {
+        isotope_data %>%
+          filter(DateTime >= storms$start[.x],
+                 DateTime <= storms$end[.x],
+                 !is.na(d18O_stream)) %>%
+          nrow()
+      }),
+      has_enough = n_isotope_obs >= min_observations
+    )
+}
+
+# --- 4. Two-component hydrograph separation ---
+# Q_total  = Q_event + Q_pre_event
+# C_total  = (C_event * Q_event + C_pre_event * Q_pre_event) / Q_total
+# Solving: f_event = (C_stream - C_pre_event) / (C_event - C_pre_event)
+# where C = isotope value (d18O or d2H), f = fraction of flow
+
+hydrograph_separate <- function(storm_id_val, storms, flow_data,
+                                isotope_data, isotope = "d18O") {
+  
+  storm      <- storms %>% filter(storm_id == storm_id_val)
+  iso_stream <- paste0(isotope, "_stream")
+  iso_precip <- paste0(isotope, "_precip")
+  
+  # Get storm isotope observations
+  storm_iso <- isotope_data %>%
+    filter(DateTime >= storm$start, DateTime <= storm$end,
+           !is.na(.data[[iso_stream]]))
+  
+  if (nrow(storm_iso) < 2) {
+    message("Not enough isotope data for storm ", storm_id_val)
+    return(NULL)
+  }
+  
+  # Pre-event endmember: mean isotope value of stream before storm
+  C_pre <- isotope_data %>%
+    filter(DateTime >= storm$start - days(3),
+           DateTime < storm$start) %>%
+    summarise(m = mean(.data[[iso_stream]], na.rm = TRUE)) %>%
+    pull(m)
+  
+  # Event endmember: precipitation isotope value
+  C_event <- isotope_data %>%
+    filter(DateTime >= storm$start, DateTime <= storm$end) %>%
+    summarise(m = mean(.data[[iso_precip]], na.rm = TRUE)) %>%
+    pull(m)
+  
+  # Interpolate total flow at isotope sample times
+  storm_iso <- storm_iso %>%
+    mutate(
+      Q_total   = approx(x = flow_data$Time, y = flow_data$Flow,
+                         xout = DateTime)$y,
+      # Mixing model
+      f_event   = (.data[[iso_stream]] - C_pre) / (C_event - C_pre),
+      f_preevent = 1 - f_event,
+      Q_event   = f_event * Q_total,
+      Q_preevent = f_preevent * Q_total,
+      storm_id  = storm_id_val,
+      isotope   = isotope,
+      C_pre     = C_pre,
+      C_event   = C_event
+    )
+  
+  return(storm_iso)
+}
+
+# --- 5. Run separation for all storms with enough data ---
+# Once isotope data is loaded, run like this:
+# separated <- storms_with_enough %>%
+#   pull(storm_id) %>%
+#   map_dfr(hydrograph_separate,
+#           storms     = storms_detected,
+#           flow_data  = WetCenter_Flow_Combined,
+#           isotope_data = your_isotope_df,
+#           isotope    = "d18O")
+
+# --- 6. Plot separation results for a single storm ---
+plot_separation <- function(separation_data, storm_id_val) {
+  d <- separation_data %>% filter(storm_id == storm_id_val)
+  
+  ggplot(d, aes(x = DateTime)) +
+    geom_area(aes(y = Q_total, fill = "Total Flow"),
+              alpha = 0.3) +
+    geom_area(aes(y = Q_preevent, fill = "Pre-event Flow"),
+              alpha = 0.6) +
+    geom_area(aes(y = Q_event, fill = "Event Flow"),
+              alpha = 0.6) +
+    geom_point(aes(y = Q_total), size = 2) +
+    scale_fill_manual(values = c("Total Flow"    = "steelblue",
+                                 "Pre-event Flow" = "brown3",
+                                 "Event Flow"    = "skyblue")) +
+    labs(title = paste("Hydrograph Separation — Storm", storm_id_val),
+         subtitle = paste("Endmembers: C_pre =", round(d$C_pre[1], 2),
+                          "| C_event =", round(d$C_event[1], 2)),
+         x = "Date/Time", y = "Discharge (m³/s)", fill = NULL) +
+    theme_bw() +
+    theme(legend.position = "bottom")
+}
