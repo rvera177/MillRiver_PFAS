@@ -646,101 +646,174 @@ ggplot() +
 # ============================================================
 
 library(zoo)  # for rolling mean
-
-# --- 1. storm_find() ---
 storm_find <- function(flow_data,
-                       time_col     = "Time",
-                       flow_col     = "Flow",
-                       baseline_days = 3,     # rolling window for baseflow estimate
-                       rise_factor  = 2.0,    # flow must exceed N x baseline to flag storm
-                       min_duration_hrs = 6,  # minimum hours above threshold to count
-                       recession_factor = 1.1,# storm ends when flow drops to N x baseline
-                       min_gap_hrs  = 12) {   # minimum hours between separate storms
+                       time_col          = "Time",
+                       flow_col          = "Flow",
+                       baseline_days     = 3,
+                       rise_factor       = 1.5,
+                       min_duration_hrs  = 6,
+                       recession_factor  = 1.4,
+                       pre_event_days    = 3,
+                       min_gap_hrs       = 12) {
   
   df <- flow_data %>%
     rename(Time = all_of(time_col), Flow = all_of(flow_col)) %>%
     arrange(Time)
   
-  # Rolling baseline: mean of preceding N days
-  baseline_n <- baseline_days * 24 * 6  # 10-min intervals per day
+  baseline_n <- baseline_days * 24 * 6
+  
   df <- df %>%
     mutate(
-      Baseline = rollapply(Flow, width = baseline_n,
-                           FUN = mean, na.rm = TRUE,
-                           align = "right", fill = NA),
+      Baseline        = rollapply(Flow, width = baseline_n,
+                                  FUN = median, na.rm = TRUE,
+                                  align = "right", fill = NA),
       Above_threshold = Flow > (Baseline * rise_factor)
     )
   
-  # Find contiguous blocks above threshold
-  df <- df %>%
-    mutate(
-      block_id = cumsum(!Above_threshold | is.na(Above_threshold))
-    )
+  message(paste("Baseline range:",
+                round(min(df$Baseline, na.rm=TRUE), 3), "to",
+                round(max(df$Baseline, na.rm=TRUE), 3)))
+  message(paste("Points above threshold:", sum(df$Above_threshold, na.rm=TRUE)))
   
-  # Identify storm blocks meeting minimum duration
+  df <- df %>%
+    mutate(block_id = cumsum(!Above_threshold | is.na(Above_threshold)))
+  
   storm_blocks <- df %>%
     filter(Above_threshold) %>%
     group_by(block_id) %>%
     summarise(
-      start    = min(Time),
-      end      = max(Time),
-      peak     = max(Flow),
-      peak_time = Time[which.max(Flow)],
+      peak_time    = Time[which.max(Flow)],
+      peak         = max(Flow),
+      thresh_start = min(Time),
+      thresh_end   = max(Time),
       duration_hrs = as.numeric(difftime(max(Time), min(Time), units = "hours")),
-      .groups = "drop"
+      .groups      = "drop"
     ) %>%
     filter(duration_hrs >= min_duration_hrs)
   
-  # Merge storms that are too close together
+  if (nrow(storm_blocks) == 0) {
+    message("No storms detected — try lowering rise_factor")
+    return(list(storms = storm_blocks, flow_flagged = df))
+  }
+  
+  # Merge storms too close together
   if (nrow(storm_blocks) > 1) {
     storm_blocks <- storm_blocks %>%
-      arrange(start) %>%
+      arrange(peak_time) %>%
       mutate(
-        gap_to_next = as.numeric(difftime(lead(start), end, units = "hours")),
+        gap_to_next = as.numeric(difftime(lead(thresh_start), thresh_end,
+                                          units = "hours")),
         new_storm   = is.na(lag(gap_to_next)) | lag(gap_to_next) > min_gap_hrs
       ) %>%
       mutate(storm_id = cumsum(new_storm)) %>%
       group_by(storm_id) %>%
       summarise(
-        start     = min(start),
-        end       = max(end),
-        peak      = max(peak),
-        peak_time = peak_time[which.max(peak)],
-        duration_hrs = as.numeric(difftime(max(end), min(start), units = "hours")),
-        .groups = "drop"
+        peak_time    = peak_time[which.max(peak)],
+        peak         = max(peak),
+        thresh_start = min(thresh_start),
+        thresh_end   = max(thresh_end),
+        duration_hrs = as.numeric(difftime(max(thresh_end), min(thresh_start),
+                                           units = "hours")),
+        .groups      = "drop"
       )
   }
   
-  # Add baseline flow at storm start (pre-event flow endmember reference)
+  storm_blocks <- storm_blocks %>%
+    mutate(storm_id = row_number())
+  
+  # --- Trough detection between consecutive storms ---
+  # For each pair of adjacent storms, find the minimum flow between their
+  # peaks and use that time as a hard boundary
+  n <- nrow(storm_blocks)
+  
+  trough_times <- map_dbl(seq_len(n), ~ {
+    if (.x == n) return(NA)  # no trough after last storm
+    
+    between <- df %>%
+      filter(Time > storm_blocks$peak_time[.x],
+             Time < storm_blocks$peak_time[.x + 1])
+    
+    if (nrow(between) == 0) return(NA)
+    
+    # Trough = minimum flow between the two peaks
+    as.numeric(between$Time[which.min(between$Flow)])
+  }) %>%
+    as.POSIXct(origin = "1970-01-01", tz = "America/New_York")
+  
   storm_blocks <- storm_blocks %>%
     mutate(
-      storm_id       = row_number(),
-      baseline_flow  = map_dbl(start, ~ {
+      trough_after  = trough_times,  # trough between this storm and the next
+      trough_before = lag(trough_after),  # trough between previous storm and this one
+      
+      baseline_flow = map_dbl(peak_time, ~ {
         df %>%
-          filter(Time >= .x - days(baseline_days), Time < .x) %>%
-          summarise(m = mean(Flow, na.rm = TRUE)) %>%
+          filter(Time >= .x - days(baseline_days),
+                 Time <  .x - days(baseline_days - 1)) %>%
+          summarise(m = median(Flow, na.rm = TRUE)) %>%
           pull(m)
-      })
+      }),
+      
+      # Start: either pre_event_days before peak OR trough before this storm
+      # whichever is LATER — prevents overlap with previous storm
+      start = map2_dbl(peak_time, trough_before, ~ {
+        candidate <- .x - days(pre_event_days)
+        if (!is.na(.y)) {
+          as.numeric(max(candidate, .y))
+        } else {
+          as.numeric(candidate)
+        }
+      }) %>%
+        as.POSIXct(origin = "1970-01-01", tz = "America/New_York"),
+      
+      # End: recession to 1.4x baseline OR trough after this storm
+      # whichever is EARLIER — prevents overlap with next storm
+      end = pmap_dbl(list(peak_time, baseline_flow, trough_after), ~ {
+        peak         <- ..1
+        base         <- ..2
+        trough_next  <- ..3
+        recession_threshold <- base * recession_factor
+        
+        after_peak <- df %>% filter(Time > peak)
+        recovered  <- after_peak %>% filter(Flow <= recession_threshold)
+        
+        recession_end <- if (nrow(recovered) == 0) {
+          as.numeric(max(after_peak$Time))
+        } else {
+          as.numeric(min(recovered$Time))
+        }
+        
+        # If there's a trough before the next storm, use whichever comes first
+        if (!is.na(trough_next)) {
+          min(recession_end, as.numeric(trough_next))
+        } else {
+          recession_end
+        }
+      }) %>%
+        as.POSIXct(origin = "1970-01-01", tz = "America/New_York")
     )
   
   return(list(storms = storm_blocks, flow_flagged = df))
 }
 
-# --- Run storm_find ---
+# --- Rerun ---
 result <- storm_find(
   WetCenter_Flow_Combined,
   baseline_days    = 3,
-  rise_factor      = 1.5,
+  rise_factor      = 1.4,
   min_duration_hrs = 6,
+  pre_event_days   = 3,
+  recession_factor = 1.1,
   min_gap_hrs      = 12
 )
 
 storms_detected <- result$storms
 flow_flagged    <- result$flow_flagged
 
-print(paste("Storms detected:", nrow(storms_detected)))
-print(storms_detected %>% select(storm_id, start, end, peak, duration_hrs))
-
+# --- Check for any remaining overlaps ---
+storms_detected %>%
+  arrange(start) %>%
+  mutate(overlap = start < lag(end)) %>%
+  select(storm_id, start, peak_time, end, overlap)
 # --- 2. Plot detected storms on hydrograph ---
 ggplot() +
   geom_rect(data = storms_detected,
@@ -752,7 +825,7 @@ ggplot() +
             linewidth = 0.6) +
   geom_point(data = storms_detected,
              aes(x = peak_time, y = peak),
-             color = "red", size = 3) +
+             color = "blue", size = 3) +
   geom_point(data = WetCenter_samples,
              aes(x = DateTime, y = Flow),
              color = "red", size = 2, alpha = 0.7) +
@@ -790,6 +863,29 @@ check_storm_isotopes <- function(storms, isotope_data,
 # C_total  = (C_event * Q_event + C_pre_event * Q_pre_event) / Q_total
 # Solving: f_event = (C_stream - C_pre_event) / (C_event - C_pre_event)
 # where C = isotope value (d18O or d2H), f = fraction of flow
+
+isotope_data = read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/New%20Isotope%20Inventory%20_%20April%2013%202026.csv")
+# See all column names cleanly
+colnames(isotope_data)
+
+# Check what locations and types you have
+unique(isotope_data$Location)
+unique(isotope_data$Type)
+
+# Check the isotope value columns specifically
+isotope_data %>%
+  select(contains("Delta"), contains("d18"), contains("d2"), 
+         contains("18O"), contains("2H")) %>%
+  head()
+
+# Check how many Wet Center stream samples have isotope values
+isotope_data %>%
+  filter(str_detect(Location, regex("wet center", ignore_case = TRUE)),
+         Type == "Stream") %>%
+  select(Date, Time, contains("Delta")) %>%
+  head(10)
+
+
 
 hydrograph_separate <- function(storm_id_val, storms, flow_data,
                                 isotope_data, isotope = "d18O") {
@@ -890,3 +986,34 @@ dygraph(flow_xts, main = "Mill River — Combined Flow Record") %>%
   dyRangeSelector() %>%        # slider at bottom to zoom/pan
   dyOptions(fillGraph = TRUE, fillAlpha = 0.2, colors = "steelblue") %>%
   dyHighlight(highlightSeriesOpts = list(strokeWidth = 2))
+
+# --- Add PFAS samples as events ---
+# --- Create a sparse xts series for sample points ---
+# Sets Flow value at sample times, NA everywhere else
+sample_xts <- WetCenter_Flow_Combined %>%
+  arrange(Time) %>%
+  mutate(SampleFlow = ifelse(Time %in% 
+                               as.POSIXct(WetCenter_samples$DateTime, tz = "America/New_York"),
+                             Flow, NA)) %>%
+  select(Time, Flow, SampleFlow) %>%
+  { xts(.[, c("Flow", "SampleFlow")], order.by = .$Time) }
+
+p <- dygraph(sample_xts, main = "Mill River — Combined Flow Record") %>%
+  dyAxis("y", label = "Discharge (m³/s)") %>%
+  dyOptions(fillAlpha = 0.2) %>%
+  dySeries("Flow",       label = "Discharge",   color = "steelblue",
+           fillGraph = TRUE) %>%
+  dySeries("SampleFlow", label = "PFAS Sample", color = "red",
+           drawPoints = TRUE, pointSize = 5, strokeWidth = 0) %>%
+  dyRangeSelector() %>%
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 2))
+
+# --- Add storm shading ---
+for (i in seq_len(nrow(storms_detected))) {
+  p <- p %>%
+    dyShading(from = format(storms_detected$start[i], "%Y-%m-%dT%H:%M:%S"),
+              to   = format(storms_detected$end[i],   "%Y-%m-%dT%H:%M:%S"),
+              color = "#ADD8E650")
+}
+p
+
