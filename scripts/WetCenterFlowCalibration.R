@@ -1240,15 +1240,15 @@ plot_separation <- function(sep_data, storm_id_val, isotope = "d18O") {
     # --- Pre-event water: bottom ribbon ---
     geom_ribbon(data = separation_interp,
                 aes(x = Time, ymin = 0, ymax = Q_pre_event),
-                fill = "black", alpha = 0.6) +
+                fill = "steelblue", alpha = 0.6) +
     # --- Event water: top ribbon ---
     geom_ribbon(data = separation_interp,
                 aes(x = Time, ymin = Q_pre_event, ymax = Flow),
-                fill = "steelblue", alpha = 0.6) +
+                fill = "black", alpha = 0.6) +
     # --- Total flow line on top for reference ---
     geom_line(data = flow_window,
               aes(x = Time, y = Flow),
-              color = "black", linewidth = 0.8) +
+              color = "steelblue", linewidth = 0.8) +
     # --- Isotope points at sample times ---
     geom_line(data = d,
               aes(x = DateTime,
