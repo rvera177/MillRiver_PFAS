@@ -872,3 +872,21 @@ plot_separation <- function(separation_data, storm_id_val) {
     theme_bw() +
     theme(legend.position = "bottom")
 }
+
+
+library(dygraphs)
+library(xts)
+
+# --- Convert to xts format which dygraphs requires ---
+flow_xts <- WetCenter_Flow_Combined %>%
+  arrange(Time) %>%
+  select(Time, Flow) %>%
+  as.data.frame() %>%
+  { xts(.$Flow, order.by = .$Time) }
+
+# --- Basic interactive hydrograph ---
+dygraph(flow_xts, main = "Mill River — Combined Flow Record") %>%
+  dyAxis("y", label = "Discharge (m³/s)") %>%
+  dyRangeSelector() %>%        # slider at bottom to zoom/pan
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.2, colors = "steelblue") %>%
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 2))
