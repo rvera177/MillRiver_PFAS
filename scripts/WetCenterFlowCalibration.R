@@ -1,7 +1,7 @@
 library(tidyverse)
 library(lubridate)
 library(readr)
-
+library(ggplot2)
 # --- 1. Load Data ---
 water_abs_df <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/WETStation4_WaterPressure.csv")
 air_abs_df   <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/WETStation3_AirPressure.csv")
@@ -320,91 +320,118 @@ highchart() %>%
 #adding flow together. 
 
 PFAS_WetCenter_2025 <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/WetCenterPFASResults.csv")
-WetCenterDischarge <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/WetCenterDischarge.csv")
+TimeViewDischarge <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/2025_1YEAR_WET%20Center%20Umass%20AmherstWETCENTERUMASSMILL%20RIVER%20LEVEL%20SENSOR1_yearchannel1.csv")
 AllChem_WetCenter_SE15 <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/Storm_Event_15_all_results.csv")
 
 # --- Reparse WetCenterDischarge$Time ---
-WetCenterDischarge <- WetCenterDischarge %>%
-  mutate(Time = mdy_hm(Time, tz = "America/New_York"))
+TimeViewDischarge <- TimeViewDischarge %>%
+  mutate(Time = mdy_hm(DateTime, tz = "America/New_York"))
 
-# --- Recompute WetCenterDischarge flow with new NLS coefficients ---
+# --- Check what failed to parse ---
+TimeViewDischarge %>%
+  filter(is.na(Time)) %>%
+  select(DateTime)
+
+# --- Fix column reference and compute flow ---
+WetCenterDischarge <- TimeViewDischarge %>%
+  mutate(
+    Time          = mdy_hm(DateTime, tz = "America/New_York"),
+    GaugeHeight_m = `Stage (m)`,          # backticks for column reference, not quotes
+    Flow          = a * (GaugeHeight_m ^ b)
+  ) %>%
+  filter(!is.na(Time), !is.na(GaugeHeight_m))  # drop the 4 failed rows
+
+# --- Verify ---
+summary(WetCenterDischarge$GaugeHeight_m)
+summary(WetCenterDischarge$Flow)
+range(WetCenterDischarge$Time, na.rm = TRUE)
+
+# --- Define overlap period ---
+overlap_start <- max(min(WetCenterDischarge$Time, na.rm = TRUE),
+                     min(WetStation4Stream$Time,  na.rm = TRUE))
+overlap_end   <- min(max(WetCenterDischarge$Time, na.rm = TRUE),
+                     max(WetStation4Stream$Time,  na.rm = TRUE))
+
+print(paste("Overlap:", overlap_start, "to", overlap_end))
+
+# --- Match by nearest timestamp during overlap ---
+library(data.table)
+
+# --- Remove outlier readings at 15m ---
+WetCenterDischarge <- WetCenterDischarge %>%
+  filter(GaugeHeight_m < 14.9)  # slightly below 15 to catch any floating point near-15 values
+
+pt_dt <- WetStation4Stream %>%
+  filter(Time >= overlap_start, Time <= overlap_end) %>%
+  select(Time, GaugeHeight_m) %>%
+  rename(H_pt = GaugeHeight_m) %>%
+  mutate(Time = as.POSIXct(Time, tz = "America/New_York")) %>%  # fix timezone warning
+  as.data.table()
+
+# --- Rerun overlap matching with clean data ---
+tv_dt <- WetCenterDischarge %>%
+  filter(Time >= overlap_start, Time <= overlap_end) %>%
+  select(Time, GaugeHeight_m) %>%
+  as.data.table()
+
+overlap_matched <- tv_dt[pt_dt, on = "Time", roll = "nearest"] %>%
+  as_tibble() %>%
+  rename(H_tv = GaugeHeight_m) %>%
+  filter(!is.na(H_tv), !is.na(H_pt))
+
+# --- Refit regression ---
+overlap_model <- lm(H_pt ~ H_tv, data = overlap_matched)
+summary(overlap_model)
+
+intercept <- coef(overlap_model)["(Intercept)"]
+slope     <- coef(overlap_model)["H_tv"]
+
+print(paste("Correction: H_corrected =", round(slope, 6),
+            "* H_tv +", round(intercept, 4)))
+
+# --- Apply correction and recompute flow ---
 WetCenterDischarge <- WetCenterDischarge %>%
   mutate(
-    GaugeHeight_m = `Adjusted Gauge Height` * 0.3048,
-    Flow          = a * (GaugeHeight_m ^ b)  # same NLS coefficients from rating curve
-  )
-
-# --- Trim WetCenterDischarge to end where pressure transducer begins ---
-cutover <- min(WetStation4Stream$Time, na.rm = TRUE)
-
-WetCenterDischarge_trimmed <- WetCenterDischarge %>%
-  filter(Time < cutover) %>%
-  transmute(
-    Time,
-    GaugeHeight_m,
-    Flow,
-    Source = "Staff Gauge"
-  )
-
-# --- Prepare WetStation4Stream with matching columns and remove first entry ---
-WetStation4Stream_labeled <- WetStation4Stream %>%
-  slice(-1) %>%  # removes first row
-  transmute(
-    Time,
-    GaugeHeight_m,
-    Flow,
-    Source = "Pressure Transducer"
-  )
-# --- Combine ---
-WetCenter_Flow_Combined <- bind_rows(WetCenterDischarge_trimmed,
-                                     WetStation4Stream_labeled) %>%
-  arrange(Time)
-
-# --- Sanity checks ---
-range(WetCenter_Flow_Combined$Time, na.rm = TRUE)
-table(WetCenter_Flow_Combined$Source)
-
-# --- Plot to visually inspect the join ---
-ggplot(WetCenter_Flow_Combined, aes(x = Time, y = Flow, color = Source)) +
-  geom_line(linewidth = 0.8) +
-  scale_color_manual(values = c("Staff Gauge" = "darkorange",
-                                "Pressure Transducer" = "steelblue")) +
-  labs(title = "Mill River — Combined Flow Record",
-       x = "Date/Time", y = "Discharge (m³/s)") +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
-# so the time view data is underpredicting flow
-overlap_start <- min(WetStation4Stream$Time, na.rm = TRUE)
-overlap_end   <- as.POSIXct("2025-10-20 21:15:00", tz = "America/New_York")
-
-tv_overlap <- WetCenterDischarge %>%
-  filter(Time >= overlap_start, Time <= overlap_end) %>%
-  summarise(mean_H = mean(GaugeHeight_m, na.rm = TRUE))
-
-pt_overlap <- WetStation4Stream %>%
-  filter(Time >= overlap_start, Time <= overlap_end) %>%
-  summarise(mean_H = mean(GaugeHeight_m, na.rm = TRUE))
-
-# The offset we need to add to TimeView to match pressure transducer
-datum_offset <- pt_overlap$mean_H - tv_overlap$mean_H
-print(paste("Datum offset (m):", round(datum_offset, 4)))
-
-
-# --- Remove outliers and apply datum correction ---
-WetCenterDischarge_clean <- WetCenterDischarge %>%
-  filter(GaugeHeight_m < 0.65) %>%
-  mutate(
-    GaugeHeight_m = GaugeHeight_m + datum_offset,
+    GaugeHeight_m = slope * GaugeHeight_m + intercept,
     Flow          = a * (GaugeHeight_m ^ b)
   )
 
-# --- Verify ---
-summary(WetCenterDischarge_clean$GaugeHeight_m)
-summary(WetCenterDischarge_clean$Flow)
+# --- Verify corrected range looks sensible ---
+summary(WetCenterDischarge$GaugeHeight_m)
+summary(WetCenterDischarge$Flow)
+# --- Visualize overlap before correction ---
+ggplot(overlap_matched, aes(x = H_tv, y = H_pt)) +
+  geom_point(alpha = 0.3, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "TimeView vs Pressure Transducer — Overlap Period",
+       x = "TimeView Stage (raw)", y = "Pressure Transducer Stage (m)") +
+  theme_bw()
 
+
+# --- Check correlation direction ---
+cor(overlap_matched$H_tv, overlap_matched$H_pt)
+
+
+# --- Visual check of corrected overlap ---
+ggplot() +
+  geom_line(data = WetCenterDischarge %>%
+              filter(Time >= overlap_start, Time <= overlap_end),
+            aes(x = Time, y = GaugeHeight_m, color = "TimeView"),
+            linewidth = 0.8) +
+  geom_line(data = WetStation4Stream %>%
+              filter(Time >= overlap_start, Time <= overlap_end),
+            aes(x = Time, y = GaugeHeight_m, color = "Pressure Transducer"),
+            linewidth = 0.8) +
+  scale_color_manual(values = c("TimeView" = "darkorange",
+                                "Pressure Transducer" = "steelblue")) +
+  labs(title = "Overlap Period — Corrected TimeView vs Pressure Transducer",
+       x = "Date/Time", y = "Stage (m)") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# --- Trim WetCenterDischarge to end where pressure transducer begins ---
 # --- Rebuild combined dataset ---
-WetCenterDischarge_trimmed <- WetCenterDischarge_clean %>%
+WetCenterDischarge_trimmed <- WetCenterDischarge %>%
   filter(Time < overlap_start) %>%
   transmute(
     Time,
@@ -426,102 +453,10 @@ WetCenter_Flow_Combined <- bind_rows(WetCenterDischarge_trimmed,
                                      WetStation4Stream_labeled) %>%
   arrange(Time)
 
-# --- Plot to inspect ---
-ggplot(WetCenter_Flow_Combined, aes(x = Time, y = Flow, color = Source)) +
-  geom_line(linewidth = 0.8) +
-  scale_color_manual(values = c("TimeView" = "darkorange",
-                                "Pressure Transducer" = "steelblue")) +
-  labs(title = "Mill River — Combined Flow Record",
-       x = "Date/Time", y = "Discharge (m³/s)") +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
-
-
-# --- Plot ONLY the overlap period to assess the correction ---
-ggplot() +
-  geom_line(data = WetCenterDischarge_clean %>% 
-              filter(Time >= overlap_start, Time <= overlap_end),
-            aes(x = Time, y = Flow, color = "TimeView"),
-            linewidth = 0.8) +
-  geom_line(data = WetStation4Stream_labeled %>%
-              filter(Time >= overlap_start, Time <= overlap_end),
-            aes(x = Time, y = Flow, color = "Pressure Transducer"),
-            linewidth = 0.8) +
-  scale_color_manual(values = c("TimeView" = "darkorange",
-                                "Pressure Transducer" = "steelblue")) +
-  labs(title = "Overlap Period — Datum Correction Check",
-       x = "Date/Time", y = "Discharge (m³/s)") +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
-
-# --- Compute a regression-based correction instead of simple offset ---
-# Join the two sources by nearest timestamp during overlap
-library(data.table)
-
-tv_dt <- WetCenterDischarge_clean %>%
-  filter(Time >= overlap_start, Time <= overlap_end) %>%
-  select(Time, GaugeHeight_m) %>%
-  as.data.table()
-
-pt_dt <- WetStation4Stream_labeled %>%
-  filter(Time >= overlap_start, Time <= overlap_end) %>%
-  select(Time, GaugeHeight_m) %>%
-  rename(H_pt = GaugeHeight_m) %>%
-  as.data.table()
-
-overlap_matched <- tv_dt[pt_dt, on = "Time", roll = "nearest"] %>%
-  as_tibble() %>%
-  rename(H_tv = GaugeHeight_m)
-
-# Fit a linear model: PT height ~ TimeView height
-overlap_model <- lm(H_pt ~ H_tv, data = overlap_matched)
-summary(overlap_model)
-
-# Extract corrected coefficients
-intercept    <- coef(overlap_model)["(Intercept)"]
-slope        <- coef(overlap_model)["H_tv"]
-
-print(paste("Correction: H_corrected =", round(slope, 4), "* H_tv +", round(intercept, 4)))
-
-
-
-# --- Apply regression-based correction to TimeView data ---
-WetCenterDischarge_corrected <- WetCenterDischarge_clean %>%
-  mutate(
-    GaugeHeight_m = slope * GaugeHeight_m + intercept,
-    Flow          = a * (GaugeHeight_m ^ b)
-  )
-
-# --- Check the overlap now ---
-ggplot() +
-  geom_line(data = WetCenterDischarge_corrected %>%
-              filter(Time >= overlap_start, Time <= overlap_end),
-            aes(x = Time, y = Flow, color = "TimeView"),
-            linewidth = 0.8) +
-  geom_line(data = WetStation4Stream_labeled %>%
-              filter(Time >= overlap_start, Time <= overlap_end),
-            aes(x = Time, y = Flow, color = "Pressure Transducer"),
-            linewidth = 0.8) +
-  scale_color_manual(values = c("TimeView" = "darkorange",
-                                "Pressure Transducer" = "steelblue")) +
-  labs(title = "Overlap Period — Regression Correction Check",
-       x = "Date/Time", y = "Discharge (m³/s)") +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
-
-#Alot better!!
-
-# --- Rebuild combined dataset with corrected TimeView ---
-WetCenterDischarge_trimmed <- WetCenterDischarge_corrected %>%
-  filter(Time < overlap_start) %>%
-  transmute(Time, GaugeHeight_m, Flow, Source = "TimeView")
-
-WetCenter_Flow_Combined <- bind_rows(WetCenterDischarge_trimmed,
-                                     WetStation4Stream_labeled) %>%
-  arrange(Time)
+# --- Sanity checks ---
+range(WetCenter_Flow_Combined$Time, na.rm = TRUE)
+table(WetCenter_Flow_Combined$Source)
+summary(WetCenter_Flow_Combined$Flow)
 
 # --- Full record plot ---
 ggplot(WetCenter_Flow_Combined, aes(x = Time, y = Flow, color = Source)) +
@@ -530,8 +465,11 @@ ggplot(WetCenter_Flow_Combined, aes(x = Time, y = Flow, color = Source)) +
                                 "Pressure Transducer" = "steelblue")) +
   labs(title = "Mill River — Combined Flow Record",
        x = "Date/Time", y = "Discharge (m³/s)") +
+  scale_x_datetime(date_labels = "%b %Y", date_breaks = "1 month",
+                   expand = c(0, 0)) +
   theme_bw() +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 
@@ -799,10 +737,10 @@ storm_find <- function(flow_data,
 result <- storm_find(
   WetCenter_Flow_Combined,
   baseline_days    = 3,
-  rise_factor      = 1.4,
+  rise_factor      = 1.1,
   min_duration_hrs = 6,
   pre_event_days   = 3,
-  recession_factor = 1.1,
+  recession_factor = 1.05,
   min_gap_hrs      = 12
 )
 
@@ -885,89 +823,506 @@ isotope_data %>%
   select(Date, Time, contains("Delta")) %>%
   head(10)
 
+# --- 1. Clean and parse isotope data ---
+isotope_clean <- isotope_data %>%
+  rename(
+    d2H     = `Processed Delta 2H`,
+    d2H_sd  = `Processed Delta 2H StDev`,
+    d18O    = `Processed Delta 18O`,
+    d18O_sd = `Processed Delta 18O StDev`
+  ) %>%
+  mutate(
+    # --- Fix known problem dates ---
+    Date_clean = case_when(
+      # Range dates — take the start date
+      str_detect(Date, "-") & str_count(Date, "/") >= 2 ~
+        str_extract(Date, "^[^-]+") %>% trimws(),
+      # Single dash only date
+      Date == "-" ~ NA_character_,
+      TRUE ~ Date
+    ),
+    # --- Fix known problem times ---
+    Time_clean = case_when(
+      is.na(Time) | trimws(Time) %in% c("-", "w", "AM", "PM") ~ "12:00:00",
+      # Remove backtick typo
+      str_detect(Time, "`") ~ str_remove(Time, "`"),
+      TRUE ~ as.character(Time)
+    ),
+    datetime_str = paste(Date_clean, Time_clean),
+    # --- Parse all formats ---
+    DateTime = as.POSIXct(datetime_str,
+                          format = "%m/%d/%y %I:%M:%S %p",
+                          tz = "America/New_York"),
+    DateTime = if_else(is.na(DateTime),
+                       as.POSIXct(datetime_str, format = "%m/%d/%y %I:%M %p",
+                                  tz = "America/New_York"), DateTime),
+    DateTime = if_else(is.na(DateTime),
+                       as.POSIXct(datetime_str, format = "%m/%d/%y %H:%M:%S",
+                                  tz = "America/New_York"), DateTime),
+    DateTime = if_else(is.na(DateTime),
+                       as.POSIXct(datetime_str, format = "%m/%d/%y %H:%M",
+                                  tz = "America/New_York"), DateTime),
+    DateTime = if_else(is.na(DateTime),
+                       as.POSIXct(datetime_str, format = "%m/%d/%Y %H:%M:%S",
+                                  tz = "America/New_York"), DateTime),
+    DateTime = if_else(is.na(DateTime),
+                       as.POSIXct(datetime_str, format = "%m/%d/%Y %I:%M:%S %p",
+                                  tz = "America/New_York"), DateTime)
+  ) %>%
+  # Drop rows with no date at all or invalid dates like 2/29/25
+  filter(!is.na(Date_clean), !is.na(d18O), !is.na(d2H))
+
+# --- Check remaining failures ---
+failed <- isotope_clean %>% filter(is.na(DateTime))
+print(paste("Failed to parse:", nrow(failed)))
+failed %>% select(Date, Time, datetime_str) %>% distinct()
+
+# --- Check Storm 15 window now ---
+isotope_clean %>%
+  filter(Location == "Wet Center",
+         Type %in% c("Stream", "stream", "Surface"),
+         DateTime >= as.POSIXct("2025-10-10", tz = "America/New_York"),
+         DateTime <= as.POSIXct("2025-10-17", tz = "America/New_York")) %>%
+  select(DateTime, d18O, d2H)
+
+# --- 2. Average replicates ---
+isotope_clean <- isotope_clean %>%
+  group_by(Location, DateTime, Type) %>%
+  summarise(
+    d2H     = mean(d2H,    na.rm = TRUE),
+    d2H_sd  = mean(d2H_sd, na.rm = TRUE),
+    d18O    = mean(d18O,   na.rm = TRUE),
+    d18O_sd = mean(d18O_sd, na.rm = TRUE),
+    .groups = "drop"
+  )
 
 
+# --- 3. Split into stream and precipitation endmembers ---
+# Wet Center stream samples
+WetCenter_isotope <- isotope_clean %>%
+  filter(str_detect(Location, regex("wet center|WC ", ignore_case = TRUE)),
+         Type %in% c("Stream", "stream", "Surface")) %>%
+  arrange(DateTime)
+
+# Precipitation samples
+# --- Precipitation endmember: Wet Center + Woodside only ---
+Precip_isotope <- isotope_clean %>%
+  filter(
+    Type %in% c("Precipitation", "Rain  / Ice", "Snow"),
+    Location %in% c("Wet Center", "Woodside", "Elab 2", "Doolittle")
+  ) %>%
+  arrange(DateTime)
+
+print(paste("Precip isotope samples:", nrow(Precip_isotope)))
+range(Precip_isotope$DateTime, na.rm = TRUE)
+
+# Sanity checks
+print(paste("Wet Center isotope samples:", nrow(WetCenter_isotope)))
+print(paste("Precip isotope samples:", nrow(Precip_isotope)))
+range(WetCenter_isotope$DateTime, na.rm = TRUE)
+range(Precip_isotope$DateTime, na.rm = TRUE)
+
+
+
+# --- 1. Average duplicate precip samples at same DateTime ---
+Precip_isotope <- Precip_isotope %>%
+  group_by(DateTime) %>%
+  summarise(
+    d2H     = mean(d2H,     na.rm = TRUE),
+    d2H_sd  = mean(d2H_sd,  na.rm = TRUE),
+    d18O    = mean(d18O,    na.rm = TRUE),
+    d18O_sd = mean(d18O_sd, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(DateTime)
+
+# --- 2. Average duplicate stream samples at same DateTime ---
+WetCenter_isotope <- WetCenter_isotope %>%
+  group_by(DateTime) %>%
+  summarise(
+    d2H     = mean(d2H,     na.rm = TRUE),
+    d2H_sd  = mean(d2H_sd,  na.rm = TRUE),
+    d18O    = mean(d18O,    na.rm = TRUE),
+    d18O_sd = mean(d18O_sd, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(DateTime)
+
+# --- 3. Function to get closest precip sample before storm start ---
+get_precip_endmember <- function(storm_start, precip_data) {
+  # Find closest precip sample to storm start
+  candidates <- precip_data %>%
+    mutate(time_diff = abs(as.numeric(difftime(DateTime, storm_start, 
+                                               units = "hours")))) %>%
+    arrange(time_diff)
+  
+  if (nrow(candidates) == 0) {
+    return(list(d18O = NA, d2H = NA, DateTime = NA, time_diff_hrs = NA))
+  }
+  
+  best <- candidates %>% slice(1)
+  
+  return(list(
+    d18O          = best$d18O,
+    d2H           = best$d2H,
+    precip_time   = best$DateTime,
+    time_diff_hrs = best$time_diff
+  ))
+}
+
+# --- 4. Two-component hydrograph separation function ---
+# --- Updated hydrograph_separate with fallback pre-event search ---
 hydrograph_separate <- function(storm_id_val, storms, flow_data,
-                                isotope_data, isotope = "d18O") {
+                                stream_isotope, precip_isotope,
+                                isotope = "d18O",
+                                min_obs = 8) {
   
-  storm      <- storms %>% filter(storm_id == storm_id_val)
-  iso_stream <- paste0(isotope, "_stream")
-  iso_precip <- paste0(isotope, "_precip")
+  storm <- storms %>% filter(storm_id == storm_id_val)
   
-  # Get storm isotope observations
-  storm_iso <- isotope_data %>%
-    filter(DateTime >= storm$start, DateTime <= storm$end,
-           !is.na(.data[[iso_stream]]))
+  # --- Get stream isotope samples during storm window ---
+  storm_iso <- stream_isotope %>%
+    filter(DateTime >= storm$start, DateTime <= storm$end)
   
-  if (nrow(storm_iso) < 2) {
-    message("Not enough isotope data for storm ", storm_id_val)
+  if (nrow(storm_iso) < min_obs) {
+    message(paste("Storm", storm_id_val, "has only", nrow(storm_iso),
+                  "isotope observations — skipping (min =", min_obs, ")"))
     return(NULL)
   }
   
-  # Pre-event endmember: mean isotope value of stream before storm
-  C_pre <- isotope_data %>%
+  # --- Pre-event endmember ---
+  # First try: 3 days before storm start
+  pre_event <- stream_isotope %>%
     filter(DateTime >= storm$start - days(3),
-           DateTime < storm$start) %>%
-    summarise(m = mean(.data[[iso_stream]], na.rm = TRUE)) %>%
-    pull(m)
+           DateTime <  storm$start)
   
-  # Event endmember: precipitation isotope value
-  C_event <- isotope_data %>%
-    filter(DateTime >= storm$start, DateTime <= storm$end) %>%
-    summarise(m = mean(.data[[iso_precip]], na.rm = TRUE)) %>%
-    pull(m)
+  # Fallback 1: widen to 7 days before storm start
+  if (nrow(pre_event) == 0) {
+    pre_event <- stream_isotope %>%
+      filter(DateTime >= storm$start - days(7),
+             DateTime <  storm$start)
+    if (nrow(pre_event) > 0) 
+      message(paste("Storm", storm_id_val, "— using 7-day pre-event window"))
+  }
   
-  # Interpolate total flow at isotope sample times
+  # Fallback 2: samples on storm start day before peak
+  if (nrow(pre_event) == 0) {
+    pre_event <- stream_isotope %>%
+      filter(DateTime >= storm$start,
+             DateTime <  storm$peak_time)
+    if (nrow(pre_event) > 0)
+      message(paste("Storm", storm_id_val, 
+                    "— using pre-peak samples as pre-event endmember"))
+  }
+  
+  # Fallback 3: first sample in storm window
+  if (nrow(pre_event) == 0) {
+    pre_event <- storm_iso %>% slice(1)
+    message(paste("Storm", storm_id_val,
+                  "— WARNING: using first storm sample as pre-event endmember"))
+  }
+  
+  C_pre_event <- pre_event %>%
+    summarise(d18O = mean(d18O, na.rm = TRUE),
+              d2H  = mean(d2H,  na.rm = TRUE))
+  
+  # --- Event endmember: closest precip sample to storm start ---
+  precip_em <- get_precip_endmember(storm$start, precip_isotope)
+  
+  if (is.na(precip_em$d18O)) {
+    message(paste("Storm", storm_id_val, "— no precipitation isotope data"))
+    return(NULL)
+  }
+  
+  message(paste0("Storm ", storm_id_val,
+                 " | Pre-event δ¹⁸O: ", round(C_pre_event$d18O, 2),
+                 " | Precip δ¹⁸O: ",    round(precip_em$d18O, 2),
+                 " | Precip sample: ",   format(precip_em$precip_time, "%Y-%m-%d"),
+                 " (", round(precip_em$time_diff_hrs, 1), " hrs from storm start)"))
+  
+  # --- Interpolate flow at isotope sample times ---
   storm_iso <- storm_iso %>%
     mutate(
-      Q_total   = approx(x = flow_data$Time, y = flow_data$Flow,
-                         xout = DateTime)$y,
-      # Mixing model
-      f_event   = (.data[[iso_stream]] - C_pre) / (C_event - C_pre),
-      f_preevent = 1 - f_event,
-      Q_event   = f_event * Q_total,
-      Q_preevent = f_preevent * Q_total,
-      storm_id  = storm_id_val,
-      isotope   = isotope,
-      C_pre     = C_pre,
-      C_event   = C_event
+      Q_total = approx(
+        x    = flow_data$Time,
+        y    = flow_data$Flow,
+        xout = DateTime,
+        rule = 2)$y
+    )
+  
+  # --- Two-component mixing model ---
+  C_pre   <- if (isotope == "d18O") C_pre_event$d18O else C_pre_event$d2H
+  C_event <- if (isotope == "d18O") precip_em$d18O   else precip_em$d2H
+  iso_col <- if (isotope == "d18O") "d18O"            else "d2H"
+  
+  storm_iso <- storm_iso %>%
+    mutate(
+      C_stream    = .data[[iso_col]],
+      f_event     = (C_stream - C_pre)   / (C_event - C_pre),
+      f_pre_event = 1 - f_event,
+      f_event     = pmax(0, pmin(1, f_event)),
+      f_pre_event = pmax(0, pmin(1, f_pre_event)),
+      Q_event     = f_event     * Q_total,
+      Q_pre_event = f_pre_event * Q_total,
+      storm_id    = storm_id_val,
+      isotope     = isotope,
+      C_pre       = C_pre,
+      C_event     = C_event
     )
   
   return(storm_iso)
 }
 
-# --- 5. Run separation for all storms with enough data ---
-# Once isotope data is loaded, run like this:
-# separated <- storms_with_enough %>%
-#   pull(storm_id) %>%
-#   map_dfr(hydrograph_separate,
-#           storms     = storms_detected,
-#           flow_data  = WetCenter_Flow_Combined,
-#           isotope_data = your_isotope_df,
-#           isotope    = "d18O")
 
-# --- 6. Plot separation results for a single storm ---
-plot_separation <- function(separation_data, storm_id_val) {
-  d <- separation_data %>% filter(storm_id == storm_id_val)
+
+# --- 5. Check which detected storms have enough isotope observations ---
+storms_isotope_check <- storms_detected %>%
+  mutate(
+    n_isotope_obs = map_int(storm_id, ~ {
+      WetCenter_isotope %>%
+        filter(DateTime >= storms_detected$start[.x],
+               DateTime <= storms_detected$end[.x]) %>%
+        nrow()
+    }),
+    has_enough = n_isotope_obs >= 8
+  )
+
+print(storms_isotope_check %>% 
+        select(storm_id, start, end, peak, n_isotope_obs, has_enough))
+
+# --- 6. Run separation for all qualifying storms ---
+qualifying_storms <- storms_isotope_check %>%
+  filter(has_enough) %>%
+  pull(storm_id)
+
+print(paste("Storms with enough isotope data:", 
+            paste(qualifying_storms, collapse = ", ")))
+
+# --- Rerun separation ---
+separated_d18O <- map_dfr(qualifying_storms, hydrograph_separate,
+                          storms         = storms_detected,
+                          flow_data      = WetCenter_Flow_Combined,
+                          stream_isotope = WetCenter_isotope,
+                          precip_isotope = Precip_isotope,
+                          isotope        = "d18O")
+
+separated_d2H <- map_dfr(qualifying_storms, hydrograph_separate,
+                         storms         = storms_detected,
+                         flow_data      = WetCenter_Flow_Combined,
+                         stream_isotope = WetCenter_isotope,
+                         precip_isotope = Precip_isotope,
+                         isotope        = "d2H")
+
+# --- Check all four storms now have results ---
+separated_d18O %>%
+  group_by(storm_id) %>%
+  summarise(
+    C_pre        = first(C_pre),
+    C_event      = first(C_event),
+    n_obs        = n(),
+    mean_f_event = mean(f_event, na.rm = TRUE)
+  )
+
+
+# --- 7. Plot separation for each storm ---
+plot_separation <- function(sep_data, storm_id_val, isotope = "d18O") {
+  d <- sep_data %>% filter(storm_id == storm_id_val)
   
-  ggplot(d, aes(x = DateTime)) +
-    geom_area(aes(y = Q_total, fill = "Total Flow"),
-              alpha = 0.3) +
-    geom_area(aes(y = Q_preevent, fill = "Pre-event Flow"),
-              alpha = 0.6) +
-    geom_area(aes(y = Q_event, fill = "Event Flow"),
-              alpha = 0.6) +
-    geom_point(aes(y = Q_total), size = 2) +
-    scale_fill_manual(values = c("Total Flow"    = "steelblue",
-                                 "Pre-event Flow" = "brown3",
-                                 "Event Flow"    = "skyblue")) +
-    labs(title = paste("Hydrograph Separation — Storm", storm_id_val),
-         subtitle = paste("Endmembers: C_pre =", round(d$C_pre[1], 2),
-                          "| C_event =", round(d$C_event[1], 2)),
-         x = "Date/Time", y = "Discharge (m³/s)", fill = NULL) +
+  if (nrow(d) == 0) {
+    message("No data for storm ", storm_id_val)
+    return(NULL)
+  }
+  
+  storm_info  <- storms_detected %>% filter(storm_id == storm_id_val)
+  flow_window <- WetCenter_Flow_Combined %>%
+    filter(Time >= storm_info$start, Time <= storm_info$end)
+  
+  ggplot() +
+    geom_area(data = flow_window,
+              aes(x = Time, y = Flow),
+              fill = "grey80", color = "grey50",
+              alpha = 0.4, linewidth = 0.8) +
+    # Pre-event water — bottom of bar to Q_pre_event
+    geom_segment(data = d,
+                 aes(x = DateTime, xend = DateTime,
+                     y = 0, yend = Q_pre_event),
+                 color = "royalblue", linewidth = 1.2, alpha = 0.8) +
+    # Event water — Q_pre_event to Q_total
+    geom_segment(data = d,
+                 aes(x = DateTime, xend = DateTime,
+                     y = Q_pre_event, yend = Q_total),
+                 color = "steelblue", linewidth = 1.2, alpha = 0.8) +
+    # Isotope line on second axis
+    geom_line(data = d,
+              aes(x = DateTime,
+                  y = (.data[[if(isotope=="d18O") "d18O" else "d2H"]] -
+                         min(.data[[if(isotope=="d18O") "d18O" else "d2H"]], na.rm=TRUE)) *
+                    (max(flow_window$Flow, na.rm=TRUE) /
+                       diff(range(.data[[if(isotope=="d18O") "d18O" else "d2H"]],
+                                  na.rm=TRUE))),
+                  color = "Stream Isotope"),
+              linewidth = 1, linetype = "dashed") +
+    scale_color_manual(values = c("Stream Isotope" = "darkgreen")) +
+    scale_y_continuous(
+      name     = "Discharge (m³/s)",
+      sec.axis = sec_axis(
+        ~ . * diff(range(d[[if(isotope=="d18O") "d18O" else "d2H"]], na.rm=TRUE)) /
+          max(flow_window$Flow, na.rm=TRUE) +
+          min(d[[if(isotope=="d18O") "d18O" else "d2H"]], na.rm=TRUE),
+        name = paste0(isotope, " (‰)")
+      )
+    ) +
+    labs(title    = paste("Storm", storm_id_val, "— Hydrograph Separation (", isotope, ")"),
+         subtitle = paste("C_pre =", round(d$C_pre[1], 2),
+                          "‰  |  C_event =", round(d$C_event[1], 2),
+                          "‰  |  Mean event fraction:",
+                          round(mean(d$f_event, na.rm=TRUE), 2)),
+         x = "Date/Time", color = NULL) +
     theme_bw() +
     theme(legend.position = "bottom")
 }
+
+# --- Storm ID mapping ---
+storm_labels <- tibble(
+  storm_id   = c(7, 9,  10,  17,  19),
+  field_name = c("Storm 10", "Storm 12", "Storm 13", "Storm 15", "Storm 16")
+)
+
+# Then in plot_separation, replace the title line with:
+field_name <- storm_labels %>%
+  filter(storm_id == storm_id_val) %>%
+  pull(field_name)
+
+print(unique(separated_d18O$storm_id))
+
+storms_detected %>%
+  select(storm_id, start, peak_time, end, peak) %>%
+  arrange(start) %>%
+  print(n = 27)
+
+# --- Plot all ---
+plot_separation <- function(sep_data, storm_id_val, isotope = "d18O") {
+  d <- sep_data %>% filter(storm_id == storm_id_val)
+  
+  if (nrow(d) == 0) {
+    message("No data for storm ", storm_id_val)
+    return(NULL)
+  }
+  
+  storm_info  <- storms_detected %>% filter(storm_id == storm_id_val)
+  flow_window <- WetCenter_Flow_Combined %>%
+    filter(Time >= storm_info$start, Time <= storm_info$end)
+  
+  # --- Interpolate separation components to 10-min resolution ---
+  separation_interp <- flow_window %>%
+    mutate(
+      Q_pre_event = approx(
+        x    = d$DateTime,
+        y    = d$Q_pre_event,
+        xout = Time,
+        rule = 2)$y,
+      f_pre_event = approx(
+        x    = d$DateTime,
+        y    = d$f_pre_event,
+        xout = Time,
+        rule = 2)$y
+    ) %>%
+    mutate(
+      # Clamp fraction to 0-1
+      f_pre_event  = pmax(0, pmin(1, f_pre_event)),
+      # Use actual flow as total, split by interpolated fraction
+      Q_pre_event  = f_pre_event * Flow,
+      Q_event      = (1 - f_pre_event) * Flow
+    )
+  field_name <- storm_labels %>%
+    filter(storm_id == storm_id_val) %>%
+    pull(field_name)
+  ggplot() +
+    # --- Pre-event water: bottom ribbon ---
+    geom_ribbon(data = separation_interp,
+                aes(x = Time, ymin = 0, ymax = Q_pre_event),
+                fill = "black", alpha = 0.6) +
+    # --- Event water: top ribbon ---
+    geom_ribbon(data = separation_interp,
+                aes(x = Time, ymin = Q_pre_event, ymax = Flow),
+                fill = "steelblue", alpha = 0.6) +
+    # --- Total flow line on top for reference ---
+    geom_line(data = flow_window,
+              aes(x = Time, y = Flow),
+              color = "black", linewidth = 0.8) +
+    # --- Isotope points at sample times ---
+    geom_line(data = d,
+              aes(x = DateTime,
+                  y = (.data[[if(isotope=="d18O") "d18O" else "d2H"]] -
+                         min(.data[[if(isotope=="d18O") "d18O" else "d2H"]], na.rm=TRUE)) *
+                    (max(flow_window$Flow, na.rm=TRUE) /
+                       diff(range(.data[[if(isotope=="d18O") "d18O" else "d2H"]],
+                                  na.rm=TRUE))),
+                  color = "Stream Isotope"),
+              linewidth = 2, linetype = "dotdash") +
+    scale_color_manual(values = c("Stream Isotope" = "magenta")) +
+    scale_y_continuous(
+      name     = "Discharge (m³/s)",
+      sec.axis = sec_axis(
+        ~ . * diff(range(d[[if(isotope=="d18O") "d18O" else "d2H"]], na.rm=TRUE)) /
+          max(flow_window$Flow, na.rm=TRUE) +
+          min(d[[if(isotope=="d18O") "d18O" else "d2H"]], na.rm=TRUE),
+        name = paste0(isotope, " (‰)")
+      )
+    ) +
+    labs(title = paste(field_name, "— Hydrograph Separation (", isotope, ")"),
+         subtitle = paste("C_pre =", round(d$C_pre[1], 2),
+                          "‰  |  C_event =", round(d$C_event[1], 2),
+                          "‰  |  Mean event fraction:",
+                          round(mean(d$f_event, na.rm=TRUE), 2)),
+         x = "Date/Time", color = NULL) +
+    theme_bw() +
+    theme(legend.position = "bottom")
+}
+
+library(patchwork)
+
+plots <- map(unique(separated_d18O$storm_id),
+             ~ plot_separation(separated_d18O, .x, "d18O"))
+
+wrap_plots(plots, ncol = 3) +
+  plot_annotation(title = "Hydrograph Separation — All Storms (δ¹⁸O)")
+
+
+
+# --- 9. Compare d18O vs d2H separation as uncertainty check ---
+if (nrow(separated_d18O) > 0 & nrow(separated_d2H) > 0) {
+  comparison <- separated_d18O %>%
+    select(DateTime, storm_id, f_event_d18O = f_event) %>%
+    left_join(separated_d2H %>% select(DateTime, storm_id, f_event_d2H = f_event),
+              by = c("DateTime", "storm_id"))
+  
+  ggplot(comparison, aes(x = f_event_d18O, y = f_event_d2H, 
+                         color = factor(storm_id))) +
+    geom_point(size = 3) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+    labs(title = "δ¹⁸O vs δ²H Separation Comparison",
+         subtitle = "Points on 1:1 line = consistent separation between tracers",
+         x = "Event fraction (δ¹⁸O)", y = "Event fraction (δ²H)",
+         color = "Storm ID") +
+    theme_bw()
+}
+
+
+
+# --- Check what isotope samples fall in the Storm 15 field window ---
+WetCenter_isotope %>%
+  filter(DateTime >= as.POSIXct("2025-10-10", tz = "America/New_York"),
+         DateTime <= as.POSIXct("2025-10-17", tz = "America/New_York")) %>%
+  select(DateTime, d18O, d2H)
+
+# --- Check what the detected storm 15 window looks like ---
+storms_detected %>% filter(storm_id == 15)
+
+# --- Also check storm 16 detected window ---
+storms_detected %>% filter(storm_id == 16)
+
+
+
 
 
 library(dygraphs)
