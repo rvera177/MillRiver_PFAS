@@ -1187,11 +1187,6 @@ storm_labels <- tibble(
   field_name = c("Storm 10", "Storm 12", "Storm 13", "Storm 15", "Storm 16")
 )
 
-# Then in plot_separation, replace the title line with:
-field_name <- storm_labels %>%
-  filter(storm_id == storm_id_val) %>%
-  pull(field_name)
-
 print(unique(separated_d18O$storm_id))
 
 storms_detected %>%
@@ -1308,20 +1303,111 @@ if (nrow(separated_d18O) > 0 & nrow(separated_d2H) > 0) {
 }
 
 
+#plotting total flow only
 
-# --- Check what isotope samples fall in the Storm 15 field window ---
-WetCenter_isotope %>%
-  filter(DateTime >= as.POSIXct("2025-10-10", tz = "America/New_York"),
-         DateTime <= as.POSIXct("2025-10-17", tz = "America/New_York")) %>%
-  select(DateTime, d18O, d2H)
+plot_separation <- function(sep_data, storm_id_val, isotope = "d18O") {
+  d <- sep_data %>% filter(storm_id == storm_id_val)
+  
+  if (nrow(d) == 0) {
+    message("No data for storm ", storm_id_val)
+    return(NULL)
+  }
+  
+  # --- Get field name ---
+  field_name <- storm_labels %>%
+    filter(storm_id == storm_id_val) %>%
+    pull(field_name)
+  
+  storm_info  <- storms_detected %>% filter(storm_id == storm_id_val)
+  flow_window <- WetCenter_Flow_Combined %>%
+    filter(Time >= storm_info$start, Time <= storm_info$end)
+  
+  # --- Interpolate fractions to 10-min resolution ---
+  separation_interp <- flow_window %>%
+    mutate(
+      f_pre_event = approx(
+        x    = d$DateTime,
+        y    = d$f_pre_event,
+        xout = Time,
+        rule = 2)$y
+    ) %>%
+    mutate(
+      f_pre_event = pmax(0, pmin(1, f_pre_event)),
+      Q_pre_event = f_pre_event * Flow,
+      Q_event     = (1 - f_pre_event) * Flow
+    )
+  
+  # --- Plot 1: Total flow only ---
+  p_flow <- ggplot() +
+    geom_area(data = flow_window,
+              aes(x = Time, y = Flow),
+              fill = "steelblue", alpha = 0.5, color = "black",
+              linewidth = 0.8) +
+    geom_point(data = d,
+               aes(x = DateTime, y = Q_total),
+               color = "red", size = 2) +
+    scale_y_continuous(name = "Discharge (m³/s)") +
+    scale_x_datetime(date_labels = "%b %d", date_breaks = "1 day") +
+    labs(title    = paste(field_name, "— Total Flow"),
+         x = NULL) +
+    theme_bw()
+  
+  # --- Plot 2: Hydrograph separation ---
+  p_sep <- ggplot() +
+    geom_ribbon(data = separation_interp,
+                aes(x = Time, ymin = 0, ymax = Q_pre_event),
+                fill = "steelblue", alpha = 0.6) +
+    geom_ribbon(data = separation_interp,
+                aes(x = Time, ymin = Q_pre_event, ymax = Flow),
+                fill = "blue", alpha = 0.6) +
+    geom_line(data = flow_window,
+              aes(x = Time, y = Flow),
+              color = "black", linewidth = 0.8) +
+    geom_line(data = d,
+              aes(x = DateTime,
+                  y = (.data[[if(isotope=="d18O") "d18O" else "d2H"]] -
+                         min(.data[[if(isotope=="d18O") "d18O" else "d2H"]], na.rm=TRUE)) *
+                    (max(flow_window$Flow, na.rm=TRUE) /
+                       diff(range(.data[[if(isotope=="d18O") "d18O" else "d2H"]],
+                                  na.rm=TRUE))),
+                  color = "Stream Isotope"),
+              linewidth = 1, linetype = "dashed") +
+    scale_color_manual(values = c("Stream Isotope" = "darkgreen")) +
+    scale_y_continuous(
+      name     = "Discharge (m³/s)",
+      sec.axis = sec_axis(
+        ~ . * diff(range(d[[if(isotope=="d18O") "d18O" else "d2H"]], na.rm=TRUE)) /
+          max(flow_window$Flow, na.rm=TRUE) +
+          min(d[[if(isotope=="d18O") "d18O" else "d2H"]], na.rm=TRUE),
+        name = paste0(isotope, " (‰)")
+      )
+    ) +
+    scale_x_datetime(date_labels = "%b %d", date_breaks = "1 day") +
+    labs(title    = paste(field_name, "— Hydrograph Separation (", isotope, ")"),
+         subtitle = paste("C_pre =", round(d$C_pre[1], 2),
+                          "‰  |  C_event =", round(d$C_event[1], 2),
+                          "‰  |  Mean event fraction:",
+                          round(mean(d$f_event, na.rm=TRUE), 2)),
+         x = "Date/Time", color = NULL) +
+    theme_bw() +
+    theme(legend.position = "bottom")
+  
+  # --- Stack vertically with patchwork ---
+  p_flow / p_sep
+}
 
-# --- Check what the detected storm 15 window looks like ---
-storms_detected %>% filter(storm_id == 15)
+# --- Plot all storms ---
+library(patchwork)
 
-# --- Also check storm 16 detected window ---
-storms_detected %>% filter(storm_id == 16)
+plots <- map(unique(separated_d18O$storm_id),
+             ~ plot_separation(separated_d18O, .x, "d18O"))
 
+# View each storm individually
+for (p in plots) print(p)
 
+# Or all together in a grid
+wrap_plots(plots, ncol = 3) +
+  plot_annotation(title = "Hydrograph Separation — All Storms (δ¹⁸O)")
 
 
 
