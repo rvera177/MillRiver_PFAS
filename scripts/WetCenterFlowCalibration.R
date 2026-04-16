@@ -110,7 +110,7 @@ WetStation4Stream <- sensor_calibrated %>%
   rename(Time = DateTime,
          GaugeHeight = Calibrated_Height_ft) %>%
   mutate(
-    GaugeHeight_m = GaugeHeight * 0.3048,
+    GaugeHeight_m = GaugeHeight * 0.3048, #convert feet to meters
     Flow = a * (GaugeHeight_m ^ b)
   ) %>%
   arrange(Time)
@@ -736,12 +736,12 @@ storm_find <- function(flow_data,
 # --- Rerun ---
 result <- storm_find(
   WetCenter_Flow_Combined,
-  baseline_days    = 3,
-  rise_factor      = 1.1,
-  min_duration_hrs = 6,
+  baseline_days    = 2.5,
+  rise_factor      = 1.14,
+  min_duration_hrs = 8,
   pre_event_days   = 3,
-  recession_factor = 1.05,
-  min_gap_hrs      = 12
+  recession_factor = 1.2,
+  min_gap_hrs      = 24
 )
 
 storms_detected <- result$storms
@@ -1239,7 +1239,7 @@ plot_separation <- function(sep_data, storm_id_val, isotope = "d18O") {
     # --- Event water: top ribbon ---
     geom_ribbon(data = separation_interp,
                 aes(x = Time, ymin = Q_pre_event, ymax = Flow),
-                fill = "black", alpha = 0.6) +
+                fill = "blue", alpha = 0.6) +
     # --- Total flow line on top for reference ---
     geom_line(data = flow_window,
               aes(x = Time, y = Flow),
@@ -1439,22 +1439,260 @@ sample_xts <- WetCenter_Flow_Combined %>%
   select(Time, Flow, SampleFlow) %>%
   { xts(.[, c("Flow", "SampleFlow")], order.by = .$Time) }
 
+# --- Define alternating colors ---
+shading_colors <- c("#ADD8E650", "#FFA50050")  # light blue and light orange
+
 p <- dygraph(sample_xts, main = "Mill River — Combined Flow Record") %>%
   dyAxis("y", label = "Discharge (m³/s)") %>%
   dyOptions(fillAlpha = 0.2) %>%
-  dySeries("Flow",       label = "Discharge",   color = "steelblue",
+  dySeries("Flow",       label = "Discharge",   color = "blue",
            fillGraph = TRUE) %>%
   dySeries("SampleFlow", label = "PFAS Sample", color = "red",
            drawPoints = TRUE, pointSize = 5, strokeWidth = 0) %>%
   dyRangeSelector() %>%
   dyHighlight(highlightSeriesOpts = list(strokeWidth = 2))
 
-# --- Add storm shading ---
+# --- Add alternating storm shading + edge lines ---
 for (i in seq_len(nrow(storms_detected))) {
+  
+  # Alternating fill color
+  fill_color <- shading_colors[(i %% 2) + 1]
+  
+  # Shaded window
   p <- p %>%
-    dyShading(from = format(storms_detected$start[i], "%Y-%m-%dT%H:%M:%S"),
-              to   = format(storms_detected$end[i],   "%Y-%m-%dT%H:%M:%S"),
-              color = "#ADD8E650")
+    dyShading(from  = format(storms_detected$start[i], "%Y-%m-%dT%H:%M:%S"),
+              to    = format(storms_detected$end[i],   "%Y-%m-%dT%H:%M:%S"),
+              color = fill_color)
+  
+  # Dark vertical line at storm start
+  p <- p %>%
+    dyAnnotation(format(storms_detected$start[i], "%Y-%m-%dT%H:%M:%S"),
+                 text       = "|",
+                 tooltip    = paste("Storm", storms_detected$storm_id[i], "start"),
+                 attachAtBottom = FALSE)
+  
+  # Dark vertical line at storm end  
+  p <- p %>%
+    dyAnnotation(format(storms_detected$end[i], "%Y-%m-%dT%H:%M:%S"),
+                 text       = "|",
+                 tooltip    = paste("Storm", storms_detected$storm_id[i], "end"),
+                 attachAtBottom = FALSE)
 }
+
 p
 
+
+# ============================================================
+# PFAS HYSTERESIS LOOPS
+# ============================================================
+
+library(ggplot2)
+library(patchwork)
+
+# --- Function to add arrows showing loop direction ---
+add_arrows <- function(df, x_col, y_col, n_arrows = 6) {
+  # Evenly spaced arrow segments along the loop
+  idx <- round(seq(2, nrow(df), length.out = n_arrows))
+  df %>%
+    slice(idx) %>%
+    mutate(
+      x_start = lag(.data[[x_col]]),
+      y_start = lag(.data[[y_col]]),
+      x_end   = .data[[x_col]],
+      y_end   = .data[[y_col]]
+    ) %>%
+    filter(!is.na(x_start))
+}
+
+# --- Core hysteresis plot function ---
+plot_hysteresis_panel <- function(pfas_data, compound, flow_col,
+                                  flow_label, storm_label,
+                                  normalize = TRUE) {
+  
+  d <- pfas_data %>%
+    filter(!is.na(.data[[compound]]), !is.na(.data[[flow_col]])) %>%
+    arrange(DateTime) %>%
+    mutate(sample_order = row_number())
+  
+  if (nrow(d) < 3) {
+    message(paste("Not enough data for", compound, "vs", flow_col))
+    return(NULL)
+  }
+  
+  # --- Normalize ---
+  if (normalize) {
+    d <- d %>%
+      mutate(
+        flow_norm = (.data[[flow_col]] - min(.data[[flow_col]], na.rm = TRUE)) /
+          (max(.data[[flow_col]], na.rm = TRUE) - min(.data[[flow_col]], na.rm = TRUE)),
+        
+        conc_norm = (.data[[compound]] - min(.data[[compound]], na.rm = TRUE)) /
+          (max(.data[[compound]], na.rm = TRUE) - min(.data[[compound]], na.rm = TRUE))
+      )
+    
+    x_var <- "flow_norm"
+    y_var <- "conc_norm"
+    
+    x_lab <- paste(flow_label, "(normalized)")
+    y_lab <- paste(compound, "(normalized)")
+    
+  } else {
+    x_var <- flow_col
+    y_var <- compound
+    
+    x_lab <- flow_label
+    y_lab <- paste(compound, "(ng/L)")
+  }
+  
+  # --- Rising vs Falling limb ---
+  d <- d %>%
+    mutate(
+      dQ = .data[[flow_col]] - lag(.data[[flow_col]]),
+      limb = ifelse(dQ >= 0, "Rising limb", "Falling limb")
+    )
+  
+  # --- Build plot (ALL layers inside one ggplot call) ---
+  p <- ggplot(d, aes(x = .data[[x_var]], y = .data[[y_var]])) +
+    
+    # points (primary signal)
+    geom_point(aes(color = limb), size = 3.5) +
+    
+    # light path (optional structure)
+    geom_path(aes(group = 1), alpha = 0.4, linewidth = 1) +
+    
+    # smooth curve (key for interpretation)
+    geom_smooth(method = "loess", se = FALSE, color = "black", linewidth = 1) +
+    
+    # start / end markers
+    geom_point(data = d %>% slice(1),
+               aes(x = .data[[x_var]], y = .data[[y_var]]),
+               color = "green", size = 5, shape = 17) +
+    
+    geom_point(data = d %>% slice(n()),
+               aes(x = .data[[x_var]], y = .data[[y_var]]),
+               color = "red", size = 5, shape = 15) +
+    
+    scale_color_manual(values = c("Rising limb" = "blue",
+                                  "Falling limb" = "orange")) +
+    
+    labs(x = x_lab,
+         y = y_lab,
+         color = "Hydrograph phase",
+         title = flow_label) +
+    
+    theme_bw() +
+    theme(
+      legend.position = "right",
+      plot.title = element_text(size = 11, face = "bold")
+    )
+  
+  return(p)
+}
+
+# --- Master function: 3-panel hysteresis per storm per compound ---
+plot_hysteresis_storm <- function(storm_id_val, compound,
+                                  pfas_data, sep_data, flow_data) {
+  
+  # Get field name
+  field_name <- storm_labels %>%
+    filter(storm_id == storm_id_val) %>%
+    pull(field_name)
+  
+  storm_info <- storms_detected %>% filter(storm_id == storm_id_val)
+  
+  # --- Filter PFAS data to storm window ---
+  storm_pfas <- pfas_data %>%
+    filter(DateTime >= storm_info$start,
+           DateTime <= storm_info$end,
+           !is.na(.data[[compound]])) %>%
+    arrange(DateTime)
+  
+  if (nrow(storm_pfas) < 3) {
+    message(paste("Not enough PFAS data for", field_name))
+    return(NULL)
+  }
+  
+  # --- Interpolate total flow at PFAS sample times ---
+  storm_pfas <- storm_pfas %>%
+    mutate(
+      Q_total = approx(
+        x    = flow_data$Time,
+        y    = flow_data$Flow,
+        xout = DateTime,
+        rule = 2)$y
+    )
+  
+  
+  # --- Interpolate pre-event and event flow from separation ---
+  storm_sep <- sep_data %>% filter(storm_id == storm_id_val)
+  
+  if (nrow(storm_sep) > 0) {
+    storm_pfas <- storm_pfas %>%
+      mutate(
+        f_pre_event = approx(
+          x    = storm_sep$DateTime,
+          y    = storm_sep$f_pre_event,
+          xout = DateTime,
+          rule = 2)$y,
+        f_pre_event = pmax(0, pmin(1, f_pre_event)),
+        Q_pre_event = f_pre_event * Q_total,
+        Q_event     = (1 - f_pre_event) * Q_total
+      )
+    has_separation <- TRUE
+  } else {
+    has_separation <- FALSE
+    message(paste(field_name, "— no separation data, plotting total flow only"))
+  }
+  
+  # --- Panel 1: Total flow ---
+  p1 <- plot_hysteresis_panel(storm_pfas, compound,
+                              flow_col    = "Q_total",
+                              flow_label  = "Total Discharge (m³/s)",
+                              storm_label = field_name)
+  
+  if (!has_separation) {
+    return(p1 + plot_annotation(title = paste(field_name, "—", compound, "Hysteresis")))
+  }
+  
+  # --- Panel 2: Pre-event flow ---
+  p2 <- plot_hysteresis_panel(storm_pfas, compound,
+                              flow_col    = "Q_pre_event",
+                              flow_label  = "Pre-event Discharge (m³/s)",
+                              storm_label = field_name)
+  
+  # --- Panel 3: Event flow ---
+  p3 <- plot_hysteresis_panel(storm_pfas, compound,
+                              flow_col    = "Q_event",
+                              flow_label  = "Event Discharge (m³/s)",
+                              storm_label = field_name)
+  
+  # --- Stack 3 panels ---
+  (p1 / p2 / p3) +
+    plot_annotation(
+      title    = paste(field_name, "—", compound, "Hysteresis"),
+      subtitle = "▲ = storm start  |  ■ = storm end  |  color: early (light) → late (dark)",
+      theme    = theme(plot.title    = element_text(size = 14, face = "bold"),
+                       plot.subtitle = element_text(size = 10))
+    )
+}
+
+# --- Run for Storm 16 with PFOA ---
+# First make sure Storm16_PFAS has DateTime parsed
+Storm16_PFAS <- Storm16_PFAS %>%
+  mutate(DateTime = as.POSIXct(paste(Date, format(Time, "%H:%M")),
+                               format = "%m/%d/%Y %H:%M",
+                               tz = "America/New_York"))
+
+# Match storm_id 17 = field Storm 16
+plot_hysteresis_storm(
+  storm_id_val = 21,
+  compound     = "PFHxA",
+  pfas_data    = Storm16_PFAS,
+  sep_data     = separated_d18O,
+  flow_data    = WetCenter_Flow_Combined
+)
+
+storm_labels <- tibble(
+  storm_id   = c(7, 9,  10,  18,  21),
+  field_name = c("Storm 10", "Storm 12", "Storm 13", "Storm 15", "Storm 16")
+)
