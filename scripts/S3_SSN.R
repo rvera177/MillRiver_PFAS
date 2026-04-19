@@ -12,7 +12,7 @@
 getwd()
 #if you like this location, then leave as is.
 #If you want to change the folder, use setwd
-#setwd("~/Soil&Water lab/Spatial Stream Networks/LWMR Isoscape")
+setwd("C:/Users/Ruli's computer/OneDrive/Documents/SSN")
 #you can put whatever folder makes sense for you. 
 #the location doesn't matter, it's just where final plots will be added to.
 #you don't need to download any data before hand. 
@@ -186,7 +186,7 @@ ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
     axis.text.y = element_text(hjust = 1)
   )
 
-# I'm keeping pctimp2019ws and npdesdensws
+# I'm keeping pctimp2019ws and npdesdensws and fertws
 #percent impervious 2019 (non-point sources) and NPDES Density (potential point sources)
 #https://www.epa.gov/npdes
 #this was done based on decently ok corelation coeffictions, and my own intuition 
@@ -324,7 +324,7 @@ plot(st_geometry(obs), add = TRUE, col = "blue", pch = 19)
 plot(st_geometry(pred), add = TRUE, col = "red", pch = 19)
 
 
-temp_dir <- "C:/Users/Marston User/Documents/LWMR Isoscape"
+temp_dir <- "C:/Users/Ruli's computer/OneDrive/Documents/SSN/S3"
 #change this to somewhere on your computer that makes sense.
 
 
@@ -508,25 +508,21 @@ pfas_cols
 #so fun
 
 models <- list()
-skipped_compounds <- c()  # keep track of skipped compounds
+skipped_compounds <- c()
 
-#this takes my computer around 40 seconds to run a spatial model for ALL compounds. Sick.
 for (compound in pfas_cols) {
-  response <- PFAS_ssn$obs[[compound]]  # extract the response values
-  # Check variability: at least 2 unique, non-NA values
+  response <- PFAS_ssn$obs[[compound]]
   if(length(unique(na.omit(response))) < 2) {
     message(paste("Skipping", compound, "- not enough variability"))
     skipped_compounds <- c(skipped_compounds, compound)
-    next  # skip this compound
+    next
   }
   
-  # Fit model for each individual compound
   form <- as.formula(paste0(compound, " ~ npdesdensws + pctimp2019ws + fertws"))
   models[[compound]] <- ssn_lm(
     formula = form,
     ssn.object = PFAS_ssn,
-    tailup_type = "exponential",
-    euclid_type = "gaussian",
+    tailup_type = "exponential",  # removed euclid_type
     additive = "afvArea")
 }
 
@@ -535,9 +531,15 @@ for (compound in pfas_cols) {
 
 preds <- list()
 for (compound in pfas_cols) {
+  
+  if (!compound %in% names(models)) {
+    message("Skipping ", compound, " - no model fit")
+    next
+  }
+  
   preds[[compound]] <- augment(
     models[[compound]],
-    newdata = "preds",  # <-- tells augment to use all prediction sites in PFAS_ssn
+    newdata = "preds",
     pred.type = "preds"
   )
 }
@@ -651,7 +653,7 @@ if (is.na(st_crs(obs_sf)) || st_crs(obs_sf) != edges_crs) obs_sf <- st_transform
 if (is.na(st_crs(catchment)) || st_crs(catchment) != edges_crs) catchment <- st_transform(catchment, edges_crs)
 
 glance_df <- map_df(models, glance, .id = "compound") # precompute glance table for R^2 lookup
-
+glance_df
 # this is the colour palette for legend (dark blue and wes anderson colors)
 pal <- colorRampPalette(c("#012A4A", wes_palette("Zissou1", type = "continuous")))(256)
 
@@ -833,6 +835,7 @@ model coefficients",
     plot.title = element_text(size = 25, face = "bold", hjust=0.5)
   )
 
+plot_df
 # Pull S3_14 and S3_15 compound profiles
 obs_sf %>%
   st_drop_geometry() %>%
@@ -848,3 +851,31 @@ obs_sf %>%
   select(Name, FTCA, FTSA, X6.2FTS_Results, X8.2FTS_Results, 
          X4.2FTS_Results, PFECA, PFESA) %>%
   print()
+
+
+#trying  to improve r2
+model_tu <- ssn_lm(
+  formula = PFAS40 ~ npdesdensws + pctimp2019ws + fertws,
+  ssn.object = PFAS_ssn,
+  tailup_type = "exponential",
+  additive = "afvArea"
+)
+
+model_td <- ssn_lm(
+  formula = PFAS40 ~ npdesdensws + pctimp2019ws + fertws,
+  ssn.object = PFAS_ssn,
+  tailup_type = "exponential",
+  taildown_type = "exponential",
+  additive = "afvArea"
+)
+
+AIC(models[["PFAS40"]], model_tu, model_td)
+summary(model_tu)
+
+
+# Compare Knightly PFCA:PFSA ratio to all other sites
+S1 %>%
+  mutate(ratio_CA_SA = PFCA / PFSA) %>%
+  select(Name, PFAS40, PFCA, PFSA, ratio_CA_SA) %>%
+  arrange(desc(ratio_CA_SA)) %>%
+  print(n = Inf)
