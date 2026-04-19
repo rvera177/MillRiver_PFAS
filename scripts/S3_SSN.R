@@ -12,16 +12,14 @@
 getwd()
 #if you like this location, then leave as is.
 #If you want to change the folder, use setwd
-setwd("C:/Users/Ruli's computer/OneDrive/Documents/SSN")
+setwd("C:/Users/Marston User/Documents/LWMR Isoscape")
 #you can put whatever folder makes sense for you. 
 #the location doesn't matter, it's just where final plots will be added to.
-#you don't need to download any data before hand. 
-
 
 #download all of these packages and then load
 library(remotes)
 library(StreamCatTools)
-library(dplyr)
+library(dplyr) #need dplyr loaded in order to pipe. Don't forget 
 library(readr) 
 library(sf)
 library(nhdplusTools) #pulls in flowlines and associated COMIDS
@@ -37,7 +35,7 @@ library(stringr)
 library(nngeo)
 
 PFAS_Spatial_March_2026 <- read_csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/Spatial_3_PFASresults.csv")
-S1 <- PFAS_Spatial_March_2026 #need dplyr loaded in order to pipe. Don't forget lol
+S1 <- PFAS_Spatial_March_2026 
 
 S1 <- S1 %>%#remove NA's for coordinates
   filter(!is.na(Latitude), !is.na(Longitude))
@@ -130,60 +128,80 @@ cor_results_Cat <- S1_Cat %>%
   cor(method = "spearman", use = "complete.obs")
 cor_long_cat <- melt(cor_results_Cat)
 
+#i added a few extra metrics to the watershed scale comid data
 streamcat_data_ws <- sc_get_data( comid = S1$COMID, 
                                   metric = c("conn", "npdesdens", "pctimp2019",
                                              "pcturbhi2019", "pcturblo2019",
                                              "pcturbmd2019", "pcturbop2019",
-                                             "huden2010", "rdcrs", "fert"),
+                                             "huden2010", "rdcrs", "fert", "pctagdrainage"),
                                   aoi = "ws" ) #area of interst, imediate stream segmetn and everything upstream of it
 
-#Make sure that your working model uses S1!
+#Make sure that your working model uses the name S1. I need to change this to S3 at somepoint!
+label_map <- c(
+  "PFAS40"                   = "PFAS40",
+  "PFCA"                     = "PFCA",
+  "PFSA"                     = "PFSA",
+  "PFOA"                     = "PFOA_Results",
+  "Fertilizer application"   = "fertws",
+  "Human population density" = "huden2010ws",
+  "Road-stream crossings"    = "rdcrsws",
+  "Watershed connectivity"   = "connws",
+  "NPDES density"            = "npdesdensws",
+  "% impervious"             = "pctimp2019ws",
+  "% urban high intensity"   = "pcturbhi2019ws",
+  "% urban low intensity"    = "pcturblo2019ws",
+  "% urban medium intensity" = "pcturbmd2019ws",
+  "% urban open space"       = "pcturbop2019ws",
+  "% agricultural drainage"  = "pctagdrainagews"
+) #making it more readable
+
 streamcat_data_ws <- streamcat_data_ws %>% rename(COMID = comid)
-S1 <- left_join(S1, streamcat_data_ws, by ="COMID") 
+S1 <- left_join(S1, streamcat_data_ws, by = "COMID")
 
 cor_results_ws <- S1 %>%
-  select(PFAS40, PFCA, PFSA, PFOA_Results, fertws, huden2010ws, rdcrsws, connws, npdesdensws, pctimp2019ws, pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws) %>% 
-  cor(method = "spearman", use = "complete.obs")
-cor_long_ws <- melt(cor_results_ws)
-
-
-#plotting the correlation results. 
-
-pheatmap(cor_results_Cat,
-         color = colorRampPalette(c("blue", "white", "red"))(50),
-         display_numbers = TRUE,
-         breaks = seq(-1, 1, length.out = 51),
-         main = "Spearman Correlation Heatmap COMID scale")
-
-
-pheatmap(cor_results_ws,
-         color = colorRampPalette(c("blue", "white", "red"))(50),
-         display_numbers = TRUE,
-         breaks = seq(-1, 1, length.out = 51),
-         main = "Spearman Correlation Heatmap watershed scale")
-
-
-cor_results_ws <- S1 %>%
-  select(PFAS40, PFCA, PFSA, PFOA_Results, connws, npdesdensws, pctimp2019ws, 
-         pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws) %>% 
+  select(PFAS40, PFCA, PFSA, PFOA_Results, fertws, huden2010ws, rdcrsws, connws,
+         npdesdensws, pctimp2019ws, pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws,
+         pcturbop2019ws, pctagdrainagews) %>%
+  rename(any_of(label_map)) %>%          # apply clean labels before correlation
   cor(method = "spearman", use = "complete.obs")
 
-# Mask lower triangle + diagonal and then melt it
+# Mask lower triangle + diagonal
 cor_results_ws[lower.tri(cor_results_ws, diag = TRUE)] <- NA
-cor_long_ws <- melt(cor_results_ws, varnames = c("Variable1", "Variable2"), value.name = "Spearman_r", na.rm = TRUE)
+cor_long_ws <- melt(cor_results_ws,
+                    varnames = c("Variable1", "Variable2"),
+                    value.name = "Spearman_r",
+                    na.rm = TRUE)
 
-# Reordering Variable2 so labels are aligned with color with tiles
-cor_long_ws$Variable2 <- factor(cor_long_ws$Variable2, levels = rev(unique(cor_long_ws$Variable2)))
+# Reorder Variable2 for correct alignment
+cor_long_ws$Variable2 <- factor(cor_long_ws$Variable2,
+                                levels = rev(unique(cor_long_ws$Variable2)))
 
-# Plot
+# Define group separator — PFAS responses vs predictors
+pfas_vars <- c("PFAS40", "PFCA", "PFSA", "PFOA")
+cor_long_ws <- cor_long_ws %>%
+  mutate(
+    text_color = ifelse(abs(Spearman_r) > 0.7, "white", "black"),
+    border = ifelse(Variable1 %in% pfas_vars & !Variable2 %in% pfas_vars, 1.2, 0.3)
+  )
+
 ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
-  geom_tile(color = "white") +
-  geom_text(aes(label = round(Spearman_r, 2)), color = "black", size = 3) +
-  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
-  theme_minimal() +
+  geom_tile(color = "white", linewidth = 0.5) +
+  geom_text(aes(label = round(Spearman_r, 2), color = text_color), size = 3.5) +
+  scale_color_identity() +
+  scale_fill_gradient2(
+    low = "blue", mid = "white", high = "red",
+    midpoint = 0,
+    limits = c(-1, 1),
+    name = "Spearman's \u03c1"   # unicode rho symbol
+  ) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal(base_size = 11) +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.text.y = element_text(hjust = 1)
+    axis.text.x  = element_text(angle = 45, hjust = 1, size = 10),
+    axis.text.y  = element_text(hjust = 1, size = 10),
+    legend.title = element_text(size = 11),
+    legend.text  = element_text(size = 10),
+    panel.grid   = element_blank()
   )
 
 # I'm keeping pctimp2019ws and npdesdensws and fertws
@@ -324,7 +342,7 @@ plot(st_geometry(obs), add = TRUE, col = "blue", pch = 19)
 plot(st_geometry(pred), add = TRUE, col = "red", pch = 19)
 
 
-temp_dir <- "C:/Users/Ruli's computer/OneDrive/Documents/SSN/S3"
+temp_dir <- "C:/Users/Marston User/Documents/LWMR Isoscape/S3"
 #change this to somewhere on your computer that makes sense.
 
 
@@ -655,7 +673,8 @@ if (is.na(st_crs(catchment)) || st_crs(catchment) != edges_crs) catchment <- st_
 glance_df <- map_df(models, glance, .id = "compound") # precompute glance table for R^2 lookup
 glance_df
 # this is the colour palette for legend (dark blue and wes anderson colors)
-pal <- colorRampPalette(c("#012A4A", wes_palette("Zissou1", type = "continuous")))(256)
+pal <- colorRampPalette(c("#012A4A", "#014F86",wes_palette("Zissou1", type = "continuous"),
+                          "#8B0000"))(256)
 
 for (compound in pfas_cols) {
   if (!compound %in% names(models)) next
@@ -715,6 +734,395 @@ for (compound in pfas_cols) {
 }
 
 p
+
+
+
+
+library(patchwork)
+
+# Load the individual saved plots or rerun for just these 5 compounds
+wanted <- c("PFAS40", "PFSA", "PFOS_Results", "PFCA", "PFOA_Results")
+title_map <- c(
+  PFAS40       = "PFAS40",
+  PFCA         = "PFCA",
+  PFSA         = "PFSA",
+  PFOS_Results = "PFOS",
+  PFOA_Results = "PFOA",
+  PFBS_Results = "PFBS",
+  PFHxS_Results = "PFHxS",
+  PFNA_Results = "PFNA"
+  # add others as needed
+)
+plot_list <- list()
+scale_max_multiplot <- 40
+for (compound in wanted) {
+  
+  pred_col    <- paste0(compound, "_pred")
+  obs_col     <- compound
+  clean_title <- ifelse(compound %in% names(title_map),
+                        title_map[[compound]],
+                        compound)
+  
+  r2_val <- glance_df %>%
+    filter(compound == !!compound) %>%
+    { if (nrow(.) == 0) NA_real_ else
+      if ("pseudo.r.squared" %in% names(.)) .$pseudo.r.squared else
+        if ("r.squared" %in% names(.)) .$r.squared else NA_real_ }
+  r2_label <- if (is.na(r2_val)) "R² = NA" else paste0("R\u00B2 = ", format(r2_val, digits = 3))
+  
+  plot_list[[compound]] <- ggplot() +
+    geom_sf(data = catchment, fill = NA, color = "black", size = 0.6) +
+    geom_sf(data = PFAS_pred$edges,
+            aes(color = .data[[pred_col]]),
+            linewidth = 1.5, show.legend = TRUE) +
+    geom_sf(data = obs_sf,
+            aes(color = .data[[obs_col]]),
+            shape = 21, fill = "white",
+            size = 2, stroke = 2.5,
+            inherit.aes = FALSE,
+            show.legend = FALSE) +
+    scale_color_gradientn(
+      colors = pal,
+      limits = c(scale_min, scale_max_multiplot),
+      oob = scales::squish,
+      na.value = "grey80",
+      name = "PFAS (ng/L)",
+      trans = "log1p",  # log1p handles zeros
+      breaks = c(0, 5, 10, 20, 40),
+      labels = c("0", "5", "10", "20", "40")
+    ) +
+    guides(color = guide_colorbar(
+      barwidth  = grid::unit(0.4, "cm"),  # slightly narrower for smaller panels
+      barheight = grid::unit(4, "cm"),
+      label.theme = element_text(size = 9),
+      title.theme = element_text(size = 10, face = "bold"),
+      title.position = "top")) +
+    labs(title = clean_title, subtitle = r2_label) +
+    theme_classic() +
+    theme(
+      plot.title    = element_text(size = 13, face = "bold", hjust = 0.5),
+      plot.subtitle = element_text(size = 9, hjust = 0.5),
+      axis.title    = element_blank(),  # remove axis titles in multipanel
+      axis.text     = element_text(size = 7),
+      legend.title  = element_text(size = 10, face = "bold"),
+      legend.text   = element_text(size = 9),
+      legend.position = "right",
+      plot.margin   = margin(t = 4, r = 4, b = 4, l = 4))
+}
+
+# Assemble with patchwork
+# column 1: PFAS40 spanning 2 rows
+# column 2: PFSA over PFOS
+# column 3: PFCA over PFOA
+
+library(ggspatial) #this is for the northarrows i am pretty sure
+
+# Update each plot with blank axes, taller colorbar, and north arrow
+for (compound in names(plot_list)) {
+  
+  # Add north arrow only to PFAS40 (the large left panel)
+  if (compound == "PFAS40") {
+    plot_list[[compound]] <- plot_list[[compound]] +
+      annotation_north_arrow(
+        location = "tl",
+        style = north_arrow_minimal(text_size = 8),
+        height = unit(0.8, "cm"),
+        width  = unit(0.8, "cm")
+      ) +
+      annotation_scale(
+        location = "bl",
+        width_hint = 0.3,
+        text_size = 8
+      )
+  }
+  
+  plot_list[[compound]] <- plot_list[[compound]] +
+    guides(color = guide_colorbar(
+      barwidth  = grid::unit(0.4, "cm"),
+      barheight = grid::unit(8, "cm"),  # taller colorbar
+      label.theme = element_text(size = 9),
+      title.theme = element_text(size = 10, face = "bold"),
+      title.position = "top"
+    )) +
+    theme(
+      axis.text  = element_blank(),  # remove axis tick labels
+      axis.ticks = element_blank(),  # remove axis ticks too
+      axis.title = element_blank()   # remove axis titles
+    )
+}
+
+# Reassemble with patchwork
+final_plot <- plot_list[["PFAS40"]] +
+  (plot_list[["PFSA"]]  / plot_list[["PFOS_Results"]]) +
+  (plot_list[["PFCA"]]  / plot_list[["PFOA_Results"]]) +
+  plot_layout(widths = c(2, 1, 1),
+              guides = "collect") +
+  plot_annotation(
+    caption = "Circles = observed values · Stream color = predicted concentration",
+    theme = theme(plot.caption = element_text(size = 9, hjust = 0.5))
+  )
+
+final_plot
+
+ggsave(
+  filename = file.path(out_dir, "multipanel_SSN_map.png"),
+  plot = final_plot,
+  width = 14, height = 8, dpi = 300
+)
+
+
+
+# 1. Check your residuals - which sites are poorly fit?
+residuals_df <- augment(models[["PFAS40"]]) %>%
+  st_drop_geometry() %>%
+  select(pid, .fitted, .resid) %>%
+  mutate(pid = as.integer(pid)) %>%           # convert to integer to match
+  left_join(
+    PFAS_ssn$obs %>% st_drop_geometry() %>% 
+      select(pid, Name, PFAS40),
+    by = "pid"
+  ) %>%
+  arrange(desc(abs(.resid)))
+
+print(residuals_df, n = Inf)
+
+# Visualize observed vs fitted
+ggplot(residuals_df, aes(x = .fitted, y = PFAS40)) +
+  geom_point(size = 3, color = "#185FA5") +
+  geom_abline(slope = 1, intercept = 0, 
+              linetype = "dashed", color = "gray50") +
+  geom_text(aes(label = Name), 
+            size = 2.8, hjust = -0.1, vjust = 0.5,
+            check_overlap = TRUE) +
+  labs(x = "Fitted (ng/L)", y = "Observed (ng/L)",
+       title = "Observed vs fitted — PFAS40") +
+  theme_classic()
+
+
+
+#thats it for the SSN model!! now, the following are for supplementary information
+
+#  using NLCD raster for land cover map
+library(ggplot2)
+library(sf)
+library(terra)
+library(dplyr)
+library(tidyterra)  
+install.packages("FedData")
+library(FedData)
+
+# Download NLCD for your watershed extent
+nlcd <- get_nlcd(
+  template = catchment,  # uses your catchment boundary as the extent
+  label = "mill_river",
+  year = 2021,           # most recent available
+  dataset = "landcover"
+)
+# Check what land cover classes exist in your downloaded NLCD
+unique(values(nlcd))
+# Plot NLCD raster with cleaner rendering
+# First convert nlcd values to factor
+nlcd_factor <- as.factor(nlcd)
+
+ggplot() +
+  geom_spatraster(data = nlcd_factor, aes(fill = Class)) +
+  scale_fill_manual(
+    values = c(
+      "11" = "#5475A8",
+      "21" = "#DDC9C9",
+      "22" = "#D89382",
+      "23" = "#ED0000",
+      "24" = "#AA0000",
+      "31" = "#B2B2B2",
+      "41" = "#38814E",
+      "42" = "#1B6330",
+      "43" = "#5CA253",
+      "52" = "#CDB577",
+      "71" = "#E8D44D",
+      "81" = "#FBF65D",
+      "82" = "#CA9146",
+      "90" = "#7BA7BC",
+      "95" = "#BAD8EA"
+    ),
+    labels = c(
+      "11" = "Open water",
+      "21" = "Developed open",
+      "22" = "Developed low",
+      "23" = "Developed medium",
+      "24" = "Developed high",
+      "31" = "Barren land",
+      "41" = "Deciduous forest",
+      "42" = "Evergreen forest",
+      "43" = "Mixed forest",
+      "52" = "Shrub/scrub",
+      "71" = "Grassland",
+      "81" = "Pasture",
+      "82" = "Cultivated crops",
+      "90" = "Woody wetlands",
+      "95" = "Emergent wetlands"
+    ),
+    na.translate = FALSE,
+    name = "Land cover"
+  ) +
+  geom_sf(data = flowline, color = "#5DADE2", linewidth = 0.4) +
+  geom_sf(data = catchment, fill = NA, color = "black", linewidth = 0.8) +
+  coord_sf(crs = st_crs(catchment)) +
+  theme_void() +
+  theme(legend.position = "left",
+        legend.title = element_text(size = 11, face = "bold"),
+        legend.text = element_text(size = 9))
+
+# Reclassify raster first
+nlcd_reclass <- classify(nlcd, 
+                         rbind(
+                           c(11, 1),   # open water
+                           c(21, 2),   # developed
+                           c(22, 2),   # developed
+                           c(23, 2),   # developed
+                           c(24, 2),   # developed
+                           c(31, 3),   # barren
+                           c(41, 4),   # forest
+                           c(42, 4),   # forest
+                           c(43, 4),   # forest
+                           c(52, 5),   # shrub/scrub -> group with forest or barren
+                           c(71, 5),   # grassland
+                           c(81, 6),   # agricultural
+                           c(82, 6),   # agricultural
+                           c(90, 7),   # woody wetlands
+                           c(95, 7)    # emergent wetlands
+                         )
+)
+
+nlcd_reclass <- as.factor(nlcd_reclass)
+
+# Get catchments for your watershed COMIDs
+comids <- PFAS_pred$edges %>% 
+  st_drop_geometry() %>% 
+  pull(comid)
+
+catchments_sub <- get_nhdplus(
+  comid = comids,
+  realization = "catchment"
+)
+
+# Check it downloaded correctly
+plot(st_geometry(catchments_sub))
+ggplot() +
+  geom_spatraster(data = nlcd_reclass, aes(fill = Class)) +
+  scale_fill_manual(
+    values = c(
+      "1" = "#A8D8EA",
+      "2" = "#AA0000",
+      "3" = "#B2B2B2",
+      "4" = "#38814E",
+      "5" = "#CDB577",
+      "6" = "#CA9146",
+      "7" = "#3B9C8C"
+    ),
+    labels = c(
+      "1" = "Open water",
+      "2" = "Developed",
+      "3" = "Barren",
+      "4" = "Forest",
+      "5" = "Shrub/grassland",
+      "6" = "Agricultural",
+      "7" = "Wetlands"
+    ),
+    na.translate = FALSE,
+    name = "Land cover"
+  ) +
+  geom_sf(data = catchments_sub,        # subcatchment borders
+          fill = NA, 
+          color = "gray20", 
+          linewidth = 0.2,
+          linetype = "dashed") +
+  geom_sf(data = flowline, color = "#A8D8EA", linewidth = 0.5) +
+  geom_sf(data = catchment, fill = NA, color = "black", linewidth = 0.8) +
+  coord_sf(crs = st_crs(catchment)) +
+  theme_void() +
+  theme(legend.position = "left",
+        legend.title = element_text(size = 11, face = "bold"),
+        legend.text  = element_text(size = 9))
+
+
+
+# Get all COMIDs from your flowlines
+all_comids <- PFAS_pred$edges %>%
+  st_drop_geometry() %>%
+  pull(comid) %>%
+  unique() %>%
+  na.omit()
+
+# Download StreamCat for ALL flowline COMIDs
+streamcat_edges <- sc_get_data(
+  comid = all_comids,  # all flowline COMIDs from earlier
+  metric = c("npdesdens", "pctimp2019", "fert",
+             "huden2010", "rdcrs", "conn",
+             "pcturb2019", "pctagdrainage"),
+  aoi = "ws"
+)
+
+cat("Rows returned:", nrow(streamcat_edges), "\n")
+cat("COMIDs requested:", length(all_comids), "\n")
+
+# Rejoin to catchments
+catchments_joined <- catchments_sub %>%
+  mutate(featureid = as.integer(featureid)) %>%
+  left_join(
+    streamcat_edges %>%
+      mutate(comid = as.integer(comid)) %>%
+      rename(featureid = comid),
+    by = "featureid"
+  )
+
+# Check coverage
+missing <- sum(is.na(catchments_joined$fertws))
+cat("Catchments still missing fertws:", missing, "\n")
+
+
+# Define predictors and clean labels for supplementary
+supp_predictors <- c("pctimp2019ws", "npdesdensws", "fertws", 
+                     "huden2010ws", "rdcrsws", "connws")
+
+supp_labels <- c(
+  pctimp2019ws = "% impervious",
+  npdesdensws  = "NPDES density",
+  fertws       = "Fertilizer application",
+  huden2010ws  = "Human population density",
+  rdcrsws      = "Road-stream crossings",
+  connws       = "Watershed connectivity"
+)
+
+# Just plot to screen first to check they look right
+for (pred in supp_predictors) {
+  
+  p <- ggplot() +
+    geom_sf(data = catchments_joined,
+            aes(fill = .data[[pred]]),
+            color = "gray40", linewidth = 0.2) +
+    scale_fill_viridis_c(
+      name = supp_labels[[pred]],
+      option = "magma",
+      na.value = "gray90"
+    ) +
+    geom_sf(data = flowline, color = "#5DADE2", linewidth = 0.5) +
+    geom_sf(data = catchment, fill = NA, color = "black", linewidth = 0.8) +
+    labs(title = supp_labels[[pred]]) +
+    coord_sf(crs = st_crs(catchment)) +
+    theme_void() +
+    theme(
+      plot.title   = element_text(size = 14, face = "bold", hjust = 0.5),
+      legend.title = element_text(size = 10, face = "bold"),
+      legend.text  = element_text(size = 9)
+    )
+  
+  print(p)  # explicitly print so it shows in loop
+  Sys.sleep(1)  # pause 1 second between plots so you can see each one
+}
+
+
+
+
 #this next step reports all your model summaries back to you
 coeffs_df <- map_df(models, ~tidy(.x), .id = "compound")
 glance_df <- map_df(models, glance, .id = "compound")
