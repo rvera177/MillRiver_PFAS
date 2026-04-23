@@ -126,65 +126,70 @@ S1_Cat <- left_join(S1, streamcat_data_cat, by ="COMID")
 cor_results_Cat <- S1_Cat %>%
   select(PFAS40, PFCA, PFSA, PFOA_Results, conncat, npdesdenscat, pctimp2019cat, pcturbhi2019cat, pcturblo2019cat, pcturbmd2019cat, pcturbop2019cat) %>% 
   cor(method = "spearman", use = "complete.obs")
-cor_long_cat <- melt(cor_results_Cat)
+cor_long_cat <- reshape2::melt(cor_results_Cat)
 
-#i added a few extra metrics to the watershed scale comid data
-streamcat_data_ws <- sc_get_data( comid = S1$COMID, 
-                                  metric = c("conn", "npdesdens", "pctimp2019",
-                                             "pcturbhi2019", "pcturblo2019",
-                                             "pcturbmd2019", "pcturbop2019",
-                                             "huden2010", "rdcrs", "fert", "pctagdrainage"),
-                                  aoi = "ws" ) #area of interst, imediate stream segmetn and everything upstream of it
 
-#Make sure that your working model uses the name S1. I need to change this to S3 at somepoint!
-label_map <- c(
-  "PFAS40"                   = "PFAS40",
-  "PFCA"                     = "PFCA",
-  "PFSA"                     = "PFSA",
-  "PFOA"                     = "PFOA_Results",
-  "Fertilizer application"   = "fertws",
-  "Human population density" = "huden2010ws",
-  "Road-stream crossings"    = "rdcrsws",
-  "Watershed connectivity"   = "connws",
-  "NPDES density"            = "npdesdensws",
-  "% impervious"             = "pctimp2019ws",
-  "% urban high intensity"   = "pcturbhi2019ws",
-  "% urban low intensity"    = "pcturblo2019ws",
-  "% urban medium intensity" = "pcturbmd2019ws",
-  "% urban open space"       = "pcturbop2019ws",
-  "% agricultural drainage"  = "pctagdrainagews"
-) #making it more readable
 
-streamcat_data_ws <- streamcat_data_ws %>% rename(COMID = comid)
-S1 <- left_join(S1, streamcat_data_ws, by = "COMID")
+#trying even more predictors at a watershed scale. 
+# Pull a comprehensive set of StreamCat metrics all at once
+streamcat_big <- sc_get_data(
+  comid = S1$COMID,
+  metric = c(
+    # urban/developed
+    "pctimp2019", "pcturbhi2019", "pcturblo2019", "pcturbmd2019", "pcturbop2019",
+    "huden2010", "rdcrs",
+    # point sources
+    "npdesdens",
+    "superfunddens",
+    "septic",
+    # agricultural
+    "fert", "pctagdrainage", "p_ff_2017", "manure",
+    # connectivity
+    "conn",
+    # nitrogen
+    "n_hw_2012", "n_usgsww_2012", "n_dep_2017",
+    # phosphorus  
+    "p_ags_2017",
+    # forest/natural
+    "pctmxfst2019", "pctdecid2019", "pctconif2019",
+    # wetlands
+    "pctwdwet2019",
+    # geology/soils
+    "bfi",        # baseflow index
+    "wtdep"      # water table depth
+  ),
+  aoi = "ws"
+)
 
-cor_results_ws <- S1 %>%
-  select(PFAS40, PFCA, PFSA, PFOA_Results, fertws, huden2010ws, rdcrsws, connws,
-         npdesdensws, pctimp2019ws, pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws,
-         pcturbop2019ws, pctagdrainagews) %>%
-  rename(any_of(label_map)) %>%          # apply clean labels before correlation
+streamcat_big <- streamcat_big %>% rename(COMID = comid)
+# Automatically identify all StreamCat predictor columns
+predictor_cols <- names(streamcat_big %>% select(-COMID))
+cat("Total predictors pulled:", length(predictor_cols), "\n")
+
+S1 <- left_join(S1, streamcat_big, by = "COMID")
+
+
+# Correlate all predictors against PFAS responses automatically
+pfas_response_cols <- c("PFAS40", "PFCA", "PFSA", "PFOA_Results", "PFOS_Results")
+
+cor_big <- S1 %>%
+  select(all_of(c(pfas_response_cols, predictor_cols))) %>%
   cor(method = "spearman", use = "complete.obs")
 
-# Mask lower triangle + diagonal
-cor_results_ws[lower.tri(cor_results_ws, diag = TRUE)] <- NA
-cor_long_ws <- melt(cor_results_ws,
-                    varnames = c("Variable1", "Variable2"),
-                    value.name = "Spearman_r",
-                    na.rm = TRUE)
+# Extract only PFAS vs predictor block
+cor_block <- cor_big[predictor_cols, pfas_response_cols, drop = FALSE]
 
-# Reorder Variable2 for correct alignment
-cor_long_ws$Variable2 <- factor(cor_long_ws$Variable2,
-                                levels = rev(unique(cor_long_ws$Variable2)))
+# Convert to long and rank by absolute correlation with PFAS40
+cor_long_big <- reshape2::melt(cor_block,
+                     varnames = c("Predictor", "PFAS"),
+                     value.name = "Spearman_r") %>%
+  group_by(Predictor) %>%
+  mutate(max_abs_r = max(abs(Spearman_r))) %>%
+  ungroup() %>%
+  arrange(desc(max_abs_r)) %>%
+  mutate(text_color = ifelse(abs(Spearman_r) > 0.7, "white", "black"))
 
-# Define group separator — PFAS responses vs predictors
-pfas_vars <- c("PFAS40", "PFCA", "PFSA", "PFOA")
-cor_long_ws <- cor_long_ws %>%
-  mutate(
-    text_color = ifelse(abs(Spearman_r) > 0.7, "white", "black"),
-    border = ifelse(Variable1 %in% pfas_vars & !Variable2 %in% pfas_vars, 1.2, 0.3)
-  )
-
-ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
+ggplot(cor_long_big, aes(x = PFAS, y = Predictor, fill = Spearman_r)) +
   geom_tile(color = "white", linewidth = 0.5) +
   geom_text(aes(label = round(Spearman_r, 2), color = text_color), size = 3.5) +
   scale_color_identity() +
@@ -204,11 +209,125 @@ ggplot(cor_long_ws, aes(x = Variable1, y = Variable2, fill = Spearman_r)) +
     panel.grid   = element_blank()
   )
 
-# I'm keeping pctimp2019ws and npdesdensws and fertws
+# Print ranked table - useful for predictor selection
+cor_long_big %>%
+  filter(PFAS == "PFAS40") %>%
+  select(Predictor, Spearman_r) %>%
+  arrange(desc(abs(Spearman_r))) %>%
+  print(n = Inf)
+
+#okay so now i run a PCA on Spearman Ranked 
+
+library(FactoMineR)
+library(factoextra)
+
+# Step 1 - select your variables
+pca_vars <- S1 %>%
+  st_drop_geometry() %>%
+  select(
+    PFAS40, PFCA, PFSA, PFOA_Results,
+    npdesdensws, pctimp2019ws, fertws,
+    huden2010ws, rdcrsws, connws,
+    bfiws, n_hw_2012ws, septicws,
+    pctagdrainagews, pctmxfst2019ws
+  ) %>%
+  na.omit()
+
+# Step 2 - rank transform everything
+pca_ranked <- pca_vars %>%
+  mutate(across(everything(), rank))
+
+# Step 3 - run PCA on ranked data
+pca_result <- PCA(
+  pca_ranked,
+  scale.unit = TRUE,   # standardize to unit variance
+  ncp = 5,             # keep 5 components
+  graph = FALSE
+)
+
+# Step 4 - check variance explained
+fviz_eig(pca_result, addlabels = TRUE) +
+  labs(title = "Variance explained by each PCA component")
+
+# Step 5 - variable loadings plot
+fviz_pca_var(
+  pca_result,
+  col.var = "contrib",    # color by contribution
+  gradient.cols = c("#012A4A", "#5DADE2", "#8B0000"),
+  repel = TRUE,           # avoid label overlap
+  title = "PCA variable loadings — Spearman rank transformed"
+)
+
+# Step 6 - biplot showing sites and variables
+fviz_pca_biplot(
+  pca_result,
+  repel = TRUE,
+  col.var = "#185FA5",
+  col.ind = "#D85A30",
+  title = "PCA biplot"
+)
+
+# Print loadings for first 3 components
+print(pca_result$var$coord[, 1:3])
+
+# Print variance explained
+print(pca_result$eig)
+
+# Visualize the separation clearly
+fviz_pca_var(
+  pca_result,
+  axes = c(1, 2),           # PC1 vs PC2
+  col.var = "contrib",
+  gradient.cols = c("#012A4A", "#5DADE2", "#8B0000"),
+  repel = TRUE,
+  title = "PCA variable loadings (PC1 vs PC2)"
+)
+
+fviz_pca_var(
+  pca_result,
+  axes = c(1, 3),           # PC1 vs PC3
+  col.var = "contrib",
+  gradient.cols = c("#012A4A", "#5DADE2", "#8B0000"),
+  repel = TRUE,
+  title = "PCA variable loadings (PC1 vs PC3)"
+)
+
+library(patchwork)
+library(factoextra)
+
+# PCA biplot
+p_biplot <- fviz_pca_biplot(
+  pca_result,
+  repel = TRUE,
+  col.var = "#185FA5",      # predictors in blue
+  col.ind = "#D85A30",      # sites in orange
+  alpha.ind = 0.6,
+  title = "PCA biplot — Spearman rank transformed",
+  ggtheme = theme_classic()
+)
+
+# Or a cleaner variables-only plot
+p_vars <- fviz_pca_var(
+  pca_result,
+  axes = c(1, 2),
+  col.var = "contrib",
+  gradient.cols = c("#012A4A", "#5DADE2", "#8B0000"),
+  repel = TRUE,
+  title = "Variable loadings — PC1 vs PC2",
+  ggtheme = theme_classic()
+) 
+
+print(p_vars)
+# Check loadings of your three chosen predictors across PC1 and PC2
+chosen <- c("npdesdensws", "pctimp2019ws", "pctagdrainagews")
+pca_result$var$coord[chosen, 1:3]
+
+cor(S1$pctimp2019ws, S1$pctagdrainagews, method = "spearman", use = "complete.obs")
+
+# I'm keeping pctimp2019ws and npdesdensws and agriculture!
 #percent impervious 2019 (non-point sources) and NPDES Density (potential point sources)
 #https://www.epa.gov/npdes
-#this was done based on decently ok corelation coeffictions, and my own intuition 
-#based on the literature and common sense
+#this was done based on XYZ
 
 
 #-------Using the NHDPlus data set from R package ------------------
@@ -250,8 +369,8 @@ plot(start_point, add = TRUE, col = "red", pch = 19)
 plot(waterbody, add = TRUE, col = "blue")
 #make sure everything is in the same projection. It should be already.
 
-#removed 2 problematic flowlines at atkins reservoir
-flowline = filter(flowline, !(objectid %in% c(47439,47740)))
+#removed 1 problematic flowline at atkins reservoir
+flowline = filter(flowline, !(objectid %in% c(47442)))
 
 #these are NSI prediction points at the center of each flowline
 nsi_PredPoints_clipped <- flowline %>%
@@ -320,13 +439,13 @@ nsi_PredPoints_clipped <- nsi_PredPoints_clipped %>%
 # get StreamCat data for the predicion point COMIDs
 streamcat_data <- sc_get_data(
   comid = nsi_PredPoints_clipped$comid,
-  metric = c("npdesdens", "pctimp2019", "fert"),  # add any other metrics you want
+  metric = c("npdesdens", "pctimp2019", "pctagdrainage"),  # add any other metrics you want
   aoi = "ws")  # watershed scale area of interest
 #add streamcat data to prediction points
 nsi_PredPoints_clipped <- left_join(nsi_PredPoints_clipped, streamcat_data, by = "comid")
 #shorthen prediction points variables down to only the ones i need.
 nsi_PredPoints_clipped <- nsi_PredPoints_clipped %>%
-  select(OBSPRED, comid, totdasqkm, npdesdensws, pctimp2019ws, fertws, geom)
+  select(OBSPRED, comid, totdasqkm, npdesdensws, pctimp2019ws, pctagdrainagews, geom)
 
 #renaming obs_clip into obs with different CRS (in meters)
 flowline <- st_transform(flowline, crs =5070)
@@ -373,7 +492,7 @@ preds <- sites_to_lsn(
   save_local = TRUE,
   lsn_path = temp_dir,
   file_name = "nsi_PredPoints_clipped",
-  snap_tolerance = 200,
+  snap_tolerance = 250,
   overwrite = TRUE)
 #yes
 edges <- updist_edges(
@@ -408,7 +527,7 @@ site.list <- afv_sites(
   lsn_path = temp_dir)
 
 ####-------Okay now you are allowed to change things----------------
-names(site.list$preds) ## View column names in pred1km
+names(site.list$preds) ## View column names in pred
 names(edges) ## Look at edges column names
 
 ggplot() +
@@ -482,12 +601,6 @@ summary(PFAS_pred)
 
 names(PFAS_pred$preds)
 
-ggplot() +
-  geom_sf(data = PFAS_pred$edges) +
-  geom_sf(data = PFAS_pred$preds$preds, pch = 17, color = "red") +
-  geom_sf(data = PFAS_pred$obs, color = "blue", size = 2) +
-  theme_bw()
-
 #hydrologic distance matrices that preserve directionality, 
 #which are required for statistical modeling
 ssn_create_distmat(
@@ -504,7 +617,7 @@ ggplot() +
   theme_bw()
 
 Togregram <- Torgegram(
-  formula = PFAS40 ~ npdesdensws + pctimp2019ws + fertws,
+  formula = PFAS40 ~ npdesdensws + pctimp2019ws + pctagdrainagews,
   ssn.object = PFAS_pred,
   type = c("flowcon", "flowuncon", "euclid")
 )
@@ -525,6 +638,49 @@ pfas_cols
 #now i'm looking at all PFAS compounds
 #so fun
 
+
+#first, exploring different SSN model structure for various compounds
+
+# Run covariance comparison for all key compounds
+key_compounds <- c("PFAS40", "PFSA", "PFCA", "PFOS_Results", "PFOA_Results")
+
+covar_results <- list()
+
+for (compound in key_compounds) {
+  
+  form <- as.formula(paste0(compound, " ~ npdesdensws + pctimp2019ws + pctagdrainagews"))
+  
+  m_tu <- ssn_lm(form, PFAS_ssn, tailup_type = "exponential", 
+                 additive = "afvArea", estmethod = "ml")
+  m_td <- ssn_lm(form, PFAS_ssn, taildown_type = "exponential",
+                 additive = "afvArea", estmethod = "ml")
+  m_tu_td <- ssn_lm(form, PFAS_ssn, tailup_type = "exponential",
+                    taildown_type = "exponential",
+                    additive = "afvArea", estmethod = "ml")
+  
+  aic_vals <- c(TU = AIC(m_tu), TD = AIC(m_td), TU_TD = AIC(m_tu_td))
+  r2_vals  <- c(
+    TU    = as.numeric(summary(m_tu)$pseudoR2),
+    TD    = as.numeric(summary(m_td)$pseudoR2),
+    TU_TD = as.numeric(summary(m_tu_td)$pseudoR2)
+  )
+  
+  covar_results[[compound]] <- data.frame(
+    compound  = compound,
+    model     = names(aic_vals),
+    AIC       = round(aic_vals, 2),
+    delta_AIC = round(aic_vals - min(aic_vals), 2),
+    pseudo_R2 = round(r2_vals, 3)
+  )
+}
+
+# Combine and print the comparison summary.
+#the goal is to have a model with a small AIC and large pseudo_R2
+covar_summary <- bind_rows(covar_results)
+print(covar_summary)
+
+# results show that diffent compounds show different AIC depending on Tail up, Tail Down 
+
 models <- list()
 skipped_compounds <- c()
 
@@ -536,25 +692,22 @@ for (compound in pfas_cols) {
     next
   }
   
-  form <- as.formula(paste0(compound, " ~ npdesdensws + pctimp2019ws + fertws"))
+  form <- as.formula(paste0(compound, " ~ npdesdensws + pctimp2019ws + pctagdrainagews"))
   models[[compound]] <- ssn_lm(
     formula = form,
     ssn.object = PFAS_ssn,
-    tailup_type = "exponential",  # removed euclid_type
-    additive = "afvArea")
-}
+    tailup_type = "exponential",
+    additive = "afvArea",
+    estmethod = "ml")
+} 
 
-
-#predict the compound concentration at each edge aka stream segment
-
+# Predict compound concentration at each edge
 preds <- list()
 for (compound in pfas_cols) {
-  
   if (!compound %in% names(models)) {
     message("Skipping ", compound, " - no model fit")
     next
   }
-  
   preds[[compound]] <- augment(
     models[[compound]],
     newdata = "preds",
@@ -562,19 +715,16 @@ for (compound in pfas_cols) {
   )
 }
 
-# Step 1: Remove all existing _pred columns (including .x and .y duplicates)
-pred_pattern <- "_pred"
-cols_to_remove <- grep(pred_pattern, names(PFAS_pred$edges), value = TRUE)
+# Remove any existing _pred columns to avoid duplicates
+cols_to_remove <- grep("_pred", names(PFAS_pred$edges), value = TRUE)
 cat("Removing these columns:\n")
 print(cols_to_remove)
-
 PFAS_pred$edges <- PFAS_pred$edges %>%
   select(-all_of(cols_to_remove))
 
-#don't model the skipped compounds that have low variability
+# Join predictions to edges
 for (compound in pfas_cols) {
   
-  # Skip compounds that had no model fit
   if (compound %in% skipped_compounds || is.null(preds[[compound]])) {
     message("Skipping ", compound)
     next
@@ -599,15 +749,18 @@ for (compound in pfas_cols) {
     left_join(df, by = "comid")
 }
 
+# Verify
+pred_cols_present <- grep("_pred$", names(PFAS_pred$edges), value = TRUE)
+cat("Pred columns in edges:", length(pred_cols_present), "\n")
 
 
-#save plots to the working director, in a new foler called out_dir
+
+
+#save plots to the working director, in a new folder called out_dir
 out_dir <- "PFAS_maps"
 if (!dir.exists(out_dir)) dir.create(out_dir)
 
-library(ggplot2)
-library(sf)
-library(dplyr)
+
 library(wesanderson)
 library(rlang)
 library(scales)
@@ -659,9 +812,10 @@ ggsave(filename = file.path(out_dir, "overview_map.png"), plot = p_overview,
 
 #--- forloop plots for all compounds------------------
 
+#left off here. Title map?
 # fixed scale limits
 scale_min <- 0
-scale_max <- 45 #this is the maximum concentration predicted and observed. 
+scale_max <- 60 #this is the maximum concentration predicted and observed. 
 #edit the max if needed in future model creations
 
 # make sure obs_sf is an sf and matches edges CRS
@@ -736,25 +890,27 @@ for (compound in pfas_cols) {
 p
 
 
-
+#--- multipanel plot -----------------------------------
 
 library(patchwork)
+library(ggspatial)
 
-# Load the individual saved plots or rerun for just these 5 compounds
 wanted <- c("PFAS40", "PFSA", "PFOS_Results", "PFCA", "PFOA_Results")
+
 title_map <- c(
-  PFAS40       = "PFAS40",
-  PFCA         = "PFCA",
-  PFSA         = "PFSA",
-  PFOS_Results = "PFOS",
-  PFOA_Results = "PFOA",
-  PFBS_Results = "PFBS",
+  PFAS40        = "PFAS40",
+  PFCA          = "PFCA",
+  PFSA          = "PFSA",
+  PFOS_Results  = "PFOS",
+  PFOA_Results  = "PFOA",
+  PFBS_Results  = "PFBS",
   PFHxS_Results = "PFHxS",
-  PFNA_Results = "PFNA"
-  # add others as needed
+  PFNA_Results  = "PFNA"
 )
+
 plot_list <- list()
-scale_max_multiplot <- 40
+scale_max_multiplot <- 60
+
 for (compound in wanted) {
   
   pred_col    <- paste0(compound, "_pred")
@@ -768,10 +924,11 @@ for (compound in wanted) {
     { if (nrow(.) == 0) NA_real_ else
       if ("pseudo.r.squared" %in% names(.)) .$pseudo.r.squared else
         if ("r.squared" %in% names(.)) .$r.squared else NA_real_ }
-  r2_label <- if (is.na(r2_val)) "R² = NA" else paste0("R\u00B2 = ", format(r2_val, digits = 3))
+  r2_label <- if (is.na(r2_val)) "R² = NA" else
+    paste0("R\u00B2 = ", format(r2_val, digits = 3))
   
   plot_list[[compound]] <- ggplot() +
-    geom_sf(data = catchment, fill = NA, color = "black", size = 0.6) +
+    geom_sf(data = catchment, fill = NA, color = "black", linewidth = 0.6) +
     geom_sf(data = PFAS_pred$edges,
             aes(color = .data[[pred_col]]),
             linewidth = 1.5, show.legend = TRUE) +
@@ -782,27 +939,27 @@ for (compound in wanted) {
             inherit.aes = FALSE,
             show.legend = FALSE) +
     scale_color_gradientn(
-      colors = pal,
-      limits = c(scale_min, scale_max_multiplot),
-      oob = scales::squish,
+      colors   = pal,
+      limits   = c(scale_min, scale_max_multiplot),
+      oob      = scales::squish,
       na.value = "grey80",
-      name = "PFAS (ng/L)",
-      trans = "log1p",  # log1p handles zeros
-      breaks = c(0, 5, 10, 20, 40),
-      labels = c("0", "5", "10", "20", "40")
+      name     = "PFAS (ng/L)",
+      trans    = "log1p",
+      breaks   = c(0, 5, 10, 20, 40, 60),
+      labels   = c("0", "5", "10", "20", "40", "60")
     ) +
     guides(color = guide_colorbar(
-      barwidth  = grid::unit(0.4, "cm"),  # slightly narrower for smaller panels
-      barheight = grid::unit(4, "cm"),
-      label.theme = element_text(size = 9),
-      title.theme = element_text(size = 10, face = "bold"),
+      barwidth       = grid::unit(0.4, "cm"),
+      barheight      = grid::unit(4, "cm"),
+      label.theme    = element_text(size = 9),
+      title.theme    = element_text(size = 10, face = "bold"),
       title.position = "top")) +
     labs(title = clean_title, subtitle = r2_label) +
     theme_classic() +
     theme(
       plot.title    = element_text(size = 13, face = "bold", hjust = 0.5),
-      plot.subtitle = element_text(size = 9, hjust = 0.5),
-      axis.title    = element_blank(),  # remove axis titles in multipanel
+      plot.subtitle = element_text(size = 9,                 hjust = 0.5),
+      axis.title    = element_blank(),
       axis.text     = element_text(size = 7),
       legend.title  = element_text(size = 10, face = "bold"),
       legend.text   = element_text(size = 9),
@@ -810,66 +967,59 @@ for (compound in wanted) {
       plot.margin   = margin(t = 4, r = 4, b = 4, l = 4))
 }
 
-# Assemble with patchwork
-# column 1: PFAS40 spanning 2 rows
-# column 2: PFSA over PFOS
-# column 3: PFCA over PFOA
-
-library(ggspatial) #this is for the northarrows i am pretty sure
-
-# Update each plot with blank axes, taller colorbar, and north arrow
+# Add north arrow and scale bar to PFAS40, remove axis text from all
 for (compound in names(plot_list)) {
   
-  # Add north arrow only to PFAS40 (the large left panel)
   if (compound == "PFAS40") {
     plot_list[[compound]] <- plot_list[[compound]] +
       annotation_north_arrow(
         location = "tl",
-        style = north_arrow_minimal(text_size = 8),
-        height = unit(0.8, "cm"),
-        width  = unit(0.8, "cm")
-      ) +
+        style    = north_arrow_minimal(text_size = 8),
+        height   = unit(0.8, "cm"),
+        width    = unit(0.8, "cm")) +
       annotation_scale(
-        location = "bl",
+        location   = "bl",
         width_hint = 0.3,
-        text_size = 8
-      )
+        text_size  = 8)
   }
   
   plot_list[[compound]] <- plot_list[[compound]] +
     guides(color = guide_colorbar(
-      barwidth  = grid::unit(0.4, "cm"),
-      barheight = grid::unit(8, "cm"),  # taller colorbar
-      label.theme = element_text(size = 9),
-      title.theme = element_text(size = 10, face = "bold"),
-      title.position = "top"
-    )) +
+      barwidth       = grid::unit(0.4, "cm"),
+      barheight      = grid::unit(8, "cm"),
+      label.theme    = element_text(size = 9),
+      title.theme    = element_text(size = 10, face = "bold"),
+      title.position = "top")) +
     theme(
-      axis.text  = element_blank(),  # remove axis tick labels
-      axis.ticks = element_blank(),  # remove axis ticks too
-      axis.title = element_blank()   # remove axis titles
+      axis.text  = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title = element_blank()
     )
 }
 
-# Reassemble with patchwork
+# Assemble with patchwork
 final_plot <- plot_list[["PFAS40"]] +
   (plot_list[["PFSA"]]  / plot_list[["PFOS_Results"]]) +
   (plot_list[["PFCA"]]  / plot_list[["PFOA_Results"]]) +
-  plot_layout(widths = c(2, 1, 1),
-              guides = "collect") +
+  plot_layout(widths = c(2, 1, 1), guides = "collect") +
   plot_annotation(
-    caption = "Circles = observed values · Stream color = predicted concentration",
-    theme = theme(plot.caption = element_text(size = 9, hjust = 0.5))
+    title    = "Predicted PFAS concentrations — Mill River Watershed",
+    subtitle = "Spatial 3 (March 2026, n = 27) · Tailup exponential SSN model",
+    caption  = "Circles = observed values · Stream color = predicted concentration",
+    theme = theme(
+      plot.title    = element_text(size = 14, face = "bold", hjust = 0.5),
+      plot.subtitle = element_text(size = 10, hjust = 0.5, color = "gray40"),
+      plot.caption  = element_text(size = 9,  hjust = 0.5)
+    )
   )
 
 final_plot
 
 ggsave(
-  filename = file.path(out_dir, "multipanel_SSN_map.png"),
-  plot = final_plot,
-  width = 14, height = 8, dpi = 300
+  filename = file.path(out_dir, "S3_multipanel_SSN_map.png"),
+  plot     = final_plot,
+  width    = 14, height = 8, dpi = 400
 )
-
 
 
 # 1. Check your residuals - which sites are poorly fit?
@@ -900,6 +1050,10 @@ ggplot(residuals_df, aes(x = .fitted, y = PFAS40)) +
 
 
 
+
+
+
+
 #thats it for the SSN model!! now, the following are for supplementary information
 
 #  using NLCD raster for land cover map
@@ -908,7 +1062,6 @@ library(sf)
 library(terra)
 library(dplyr)
 library(tidyterra)  
-install.packages("FedData")
 library(FedData)
 
 # Download NLCD for your watershed extent
@@ -1045,7 +1198,7 @@ ggplot() +
         legend.text  = element_text(size = 9))
 
 
-
+#this makes maps of the streamcat metrics on the study area
 # Get all COMIDs from your flowlines
 all_comids <- PFAS_pred$edges %>%
   st_drop_geometry() %>%
@@ -1058,7 +1211,7 @@ streamcat_edges <- sc_get_data(
   comid = all_comids,  # all flowline COMIDs from earlier
   metric = c("npdesdens", "pctimp2019", "fert",
              "huden2010", "rdcrs", "conn",
-             "pcturb2019", "pctagdrainage"),
+            "pctagdrainage", "septic"),
   aoi = "ws"
 )
 
@@ -1082,7 +1235,8 @@ cat("Catchments still missing fertws:", missing, "\n")
 
 # Define predictors and clean labels for supplementary
 supp_predictors <- c("pctimp2019ws", "npdesdensws", "fertws", 
-                     "huden2010ws", "rdcrsws", "connws")
+                     "huden2010ws", "rdcrsws", "pctagdrainagews", 
+                     "connws", "septicws")
 
 supp_labels <- c(
   pctimp2019ws = "% impervious",
@@ -1090,7 +1244,9 @@ supp_labels <- c(
   fertws       = "Fertilizer application",
   huden2010ws  = "Human population density",
   rdcrsws      = "Road-stream crossings",
-  connws       = "Watershed connectivity"
+  pctagdrainagews = "% Agricultural drainage",
+  connws       = "Watershed connectivity",
+  septicws     = "Septic System Density"
 )
 
 # Just plot to screen first to check they look right
@@ -1123,6 +1279,9 @@ for (pred in supp_predictors) {
 
 
 
+
+
+#check the influence of each predictor on the 
 #this next step reports all your model summaries back to you
 coeffs_df <- map_df(models, ~tidy(.x), .id = "compound")
 glance_df <- map_df(models, glance, .id = "compound")
@@ -1201,7 +1360,7 @@ want_comps <- c("PFCA", "PFSA", "PFAS40")
 pred_labels <- c(
   npdesdensws  = "NPDES density",
   pctimp2019ws = "% impervious",
-  fertws       = "Fertilizer Application"
+  pctagdrainagews = "% Agricultural"
 )
 
 # preparing plotting set up
@@ -1244,6 +1403,9 @@ model coefficients",
   )
 
 plot_df
+
+#this is trying to understand relevance of a few new areas, that were deemed hotspots in the first model
+
 # Pull S3_14 and S3_15 compound profiles
 obs_sf %>%
   st_drop_geometry() %>%
@@ -1252,33 +1414,13 @@ obs_sf %>%
          PFBA_Results, PFHxS_Results, PFCA, PFSA, FTCA) %>%
   print()
 
-# Check FTCA and FTS compounds specifically - these are biosolid markers
+# Check FTCA and FTS compounds specifically - these are biosolid related
 obs_sf %>%
   st_drop_geometry() %>%
   filter(Name %in% c("UMass Farm", "Brandywine Pond")) %>%
   select(Name, FTCA, FTSA, X6.2FTS_Results, X8.2FTS_Results, 
          X4.2FTS_Results, PFECA, PFESA) %>%
   print()
-
-
-#trying  to improve r2
-model_tu <- ssn_lm(
-  formula = PFAS40 ~ npdesdensws + pctimp2019ws + fertws,
-  ssn.object = PFAS_ssn,
-  tailup_type = "exponential",
-  additive = "afvArea"
-)
-
-model_td <- ssn_lm(
-  formula = PFAS40 ~ npdesdensws + pctimp2019ws + fertws,
-  ssn.object = PFAS_ssn,
-  tailup_type = "exponential",
-  taildown_type = "exponential",
-  additive = "afvArea"
-)
-
-AIC(models[["PFAS40"]], model_tu, model_td)
-summary(model_tu)
 
 
 # Compare Knightly PFCA:PFSA ratio to all other sites
