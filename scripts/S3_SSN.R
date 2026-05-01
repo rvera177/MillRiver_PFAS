@@ -81,6 +81,10 @@ S3 <- S3 %>%
     })
   )
 
+S3 = S3 %>%
+  mutate (PFCA_PFSA_ratio = PFCA / PFSA)
+
+
 S3 <- S3 %>%
   mutate(OBSPRED_ID = row_number())
 
@@ -367,9 +371,10 @@ subset <- subset_nhdplus(
 flowline  <- sf::read_sf(subset_file, "NHDFlowline_Network")
 catchment <- sf::read_sf(subset_file, "CatchmentSP")
 waterbody <- sf::read_sf(subset_file, "NHDWaterbody")
-plot(st_geometry(flowline), col = "blue")
+plot(st_geometry(catchment), col = "black")
+plot(st_geometry(flowline), add = TRUE, col = "lightblue")
 plot(start_point, add = TRUE, col = "red", pch = 19)
-plot(waterbody, add = TRUE, col = "blue")
+plot(st_geometry(waterbody), add = TRUE, col = "lightblue")
 #make sure everything is in the same projection. It should be already.
 
 #removed 1 problematic flowline at atkins reservoir
@@ -446,7 +451,7 @@ flowline <- st_transform(flowline, crs =5070)
 obs <- st_transform(obs_clip, crs =5070)
 pred <- st_transform(nsi_PredPoints_clipped, crs =5070)
 catchment <- st_transform(catchment_union, crs =5070)
-
+st_area(catchment)
 
 # Now plotting everything together
 plot(st_geometry(flowline), col = "blue")
@@ -612,12 +617,26 @@ ggplot() +
   scale_color_viridis_c(limits = c(0, 60), option = "H") +
   theme_bw()
 
-Togregram <- Torgegram(
+Togregram_PFAS40 <- Torgegram(
   formula = PFAS40 ~ npdesdensws + pctimp2019ws + pctagdrainagews,
   ssn.object = PFAS_pred,
   type = c("flowcon", "flowuncon", "euclid")
 )
-plot(Togregram)
+plot(Togregram_PFAS40)
+
+Togregram_PFSA <- Torgegram(
+  formula = PFSA ~ npdesdensws + pctimp2019ws + pctagdrainagews,
+  ssn.object = PFAS_pred,
+  type = c("flowcon", "flowuncon", "euclid")
+)
+plot(Togregram_PFSA)
+
+Togregram_PFCA <- Torgegram(
+  formula = PFCA ~ npdesdensws + pctimp2019ws + pctagdrainagews,
+  ssn.object = PFAS_pred,
+  type = c("flowcon", "flowuncon", "euclid")
+)
+plot(Togregram_PFCA)
 
 #name the columns you want models for!
 # get all column names
@@ -628,7 +647,7 @@ all_cols <- names(PFAS_ssn$obs)
 #find the first PFAS column and final PFAS column
 # that you want to make models for
 start <- match("PFAS40", all_cols)
-end   <- match("FTCA", all_cols)
+end   <- match("PFCA_PFSA_ratio", all_cols)
 # subset the column names
 pfas_cols <- all_cols[start:end]
 pfas_cols
@@ -802,7 +821,7 @@ p_overview
 
 # fixed scale limits
 scale_min <- 0
-scale_max <- 60 #this is the maximum concentration predicted and observed. 
+scale_max <- 6 #this is the maximum concentration predicted and observed. 
 #edit the max if needed in future model creations
 
 glance_df <- map_df(models, glance, .id = "compound") # precompute glance table for R^2 lookup
@@ -840,7 +859,7 @@ for (compound in pfas_cols) {
       limits = c(scale_min, scale_max),
       oob = scales::squish,
       na.value = "grey80",
-      name = "PFAS (ng/L)") +
+      name = "Ratio") +
     guides(color = guide_colorbar(
       barwidth  = grid::unit(0.6, "cm"),
       barheight = grid::unit(6, "cm"),
