@@ -11,9 +11,9 @@ library(dplyr)
 # the code does the following steps
 #1) storm find function and finding storms based off of flow at the wet center
 #2) event/preevent seperation function applied on the found storms using the isotope inventory results 
-# (needs at least 8 stream isotope and 1 precip isotope to actualy work for a given storm)
+# which needs at least 8 stream isotope and 1 precip isotope to actualy work for a given storm.
 #3) that's it. lol.
-# there are a few isotope samples that have not been run, so there are a few storms that can be added to this. 
+# there are a few isotope samples that have not been run, so there are a few storms that would be able to be added to this. 
 
 
 WetCenter_Flow_Combined <- read.csv("https://raw.githubusercontent.com/rvera177/MillRiver_PFAS/refs/heads/main/data/WetCenterFlow_Updated_April_14_2026.csv") %>%
