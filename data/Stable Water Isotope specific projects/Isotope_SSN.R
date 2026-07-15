@@ -1,6 +1,6 @@
 #Raul Vera
 #Created Feb 25 2026
-#Last updated: 
+#Last updated: July 15 2026
 
 #Hello and welcome to my PFAS SSN model
 #this script models 17 PFAS stream observations from Amherst
@@ -8,11 +8,11 @@
 
 #first, set your working directory. This is where your files will be saved
 #getwd = current working directory/folder. 
-#getwd()
+getwd()
 
 #if you like this location, then leave as is.
 #If you want to change the folder, use setwd
-setwd("~/Soil&Water lab/Spatial Stream Networks/LWMR Isoscape")
+setwd("C:/Users/Marston User/Documents/LWMR Isoscape/IsotopeSSN")
 #you can put whatever folder makes sense for you. 
 #the location doesn't matter, it's just where final plots will be added to.
 #you don't need to download any data before hand. 
@@ -44,18 +44,21 @@ S1 <- S1 %>%
   mutate(OBSPRED_ID = row_number()) #creates a new column with row number
 
 
-#snapping sites to nearest flowline so it gets the nearest comid
+# Snap sites to nearest flowline to get COMID
 sites <- st_as_sf(S1,
                   coords = c("Long", "Lat"),
                   crs = 4326)
 
-#the following chuck is for snapping prediction sites to a flowline.
-bb <- st_bbox(sites) #bb=bounding box around each Observation sites
-bb_poly <- st_as_sfc(st_bbox(sites))  # convert bbox to sfc
-bb_sf <- st_sf(geometry = bb_poly)# convert to sf object
-flines <- get_nhdplus(AOI = bb_sf, realization = "flowline") #Download flowlines each bounding box
-idx <- get_flowline_index(flines, sites, max_matches = 1) #Snap points to nearest flowline & get COMID
-S1$COMID <- as.numeric(idx$COMID) #comid ID for each point! Don't need to use idx anymore.
+bb_poly <- st_as_sfc(st_bbox(sites)) #bounding box around my sites
+bb_sf   <- st_sf(geometry = bb_poly)
+flines  <- get_nhdplus(AOI = bb_sf, realization = "flowline") #flowlines in my bbox
+
+idx <- get_flowline_index(flines, sites, max_matches = 1)
+
+# idx contains column point_id that corresponds to the site row number
+S1$COMID <- NA_real_  # initialize with NA so unmatched sites get NA
+
+S1$COMID[idx$id] <- as.numeric(idx$COMID)
 
 # (use StreamCatTools documentation for metric names) 
 #https://www.epa.gov/national-aquatic-resource-surveys/streamcat-metrics-and-definitions
@@ -71,8 +74,8 @@ streamcat_data_cat <- sc_get_data( comid = S1$COMID,
 streamcat_data_ws <- sc_get_data( comid = S1$COMID, 
                                   metric = c("conn", "npdesdens", "pctimp2019",
                                              "pcturbhi2019", "pcturblo2019",
-                                             "pcturbmd2019", "pcturbop2019",
-                                             "huden2010", "rdcrs"),
+                                             "pcturbmd2019", "pcturbop2019", "bfi","elev",
+                                             "huden2010", "rdcrs", "mast"),
                                   aoi = "ws" ) #area of interst, imediate stream segmetn and everything upstream of it
 
 #renaming since there was a name conversion using sc_get_data
@@ -84,12 +87,12 @@ streamcat_data_ws <- streamcat_data_ws %>% rename(COMID = comid)
 S1 <- left_join(S1, streamcat_data_ws, by ="COMID") 
 
 cor_results_ws <- S1 %>%
-  select(TOC, DOC, Calcium, Sulfate, connws, npdesdensws, pctimp2019ws, pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws) %>% 
+  select("2H", "18O", "17O", connws, npdesdensws, elevws, pctimp2019ws, bfiws, pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws, "rdcrsws","huden2010ws") %>% 
   cor(method = "spearman", use = "complete.obs")
 cor_long_ws <- melt(cor_results_ws)
 
 cor_results_Cat <- S1_Cat %>%
-  select(TOC, DOC, Calcium, Sulfate, conncat, npdesdenscat, pctimp2019cat, pcturbhi2019cat, pcturblo2019cat, pcturbmd2019cat, pcturbop2019cat) %>% 
+  select("2H", "18O", "17O", connws, npdesdensws, pctimp2019ws, pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws, "rdcrsws","huden2010ws") %>% 
   cor(method = "spearman", use = "complete.obs")
 cor_long_cat <- melt(cor_results_Cat)
 
@@ -110,8 +113,8 @@ pheatmap(cor_results_ws,
 
 
 cor_results_ws <- S1 %>%
-  select(TOC, DOC, Calcium, Sulfate, connws, npdesdensws, pctimp2019ws, 
-         pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws) %>% 
+  select("2H", "18O", "17O", connws, npdesdensws, elevws, pctimp2019ws, bfiws, pcturbhi2019ws, pcturblo2019ws, 
+         pcturbmd2019ws, pcturbop2019ws, "rdcrsws","huden2010ws") %>% 
   cor(method = "spearman", use = "complete.obs")
 
 # Mask lower triangle + diagonal and then melt it
@@ -248,13 +251,13 @@ nsi_PredPoints_clipped <- nsi_PredPoints_clipped %>%
 # get StreamCat data for the predicion point COMIDs
 streamcat_data <- sc_get_data(
   comid = nsi_PredPoints_clipped$comid,
-  metric = c("npdesdens", "pctimp2019", "pcturblo2019"),  # add any other metrics you want
+  metric = c("bfi", "elev", "pcturbop2019"),  # add any other metrics you want
   aoi = "ws")  # watershed scale area of interest
 #add streamcat data to prediction points
 nsi_PredPoints_clipped <- left_join(nsi_PredPoints_clipped, streamcat_data, by = "comid")
 #shorthen prediction points variables down to only the ones i need.
 nsi_PredPoints_clipped <- nsi_PredPoints_clipped %>%
-  select(OBSPRED, comid, totdasqkm, npdesdensws, pctimp2019ws, geom)
+  select(OBSPRED, comid, totdasqkm, bfiws, pcturbop2019ws, elevws, geom)
 
 #renaming obs_clip into obs with different CRS (in meters)
 flowline <- st_transform(flowline, crs =5070)
@@ -270,7 +273,7 @@ plot(st_geometry(obs), add = TRUE, col = "blue", pch = 19)
 plot(st_geometry(pred), add = TRUE, col = "red", pch = 19)
 
 
-temp_dir <- "/Users/katarzynawisnauckas"
+temp_dir <- "/Users/Marston User/Documents/LWMR Isoscape/IsotopeSSN"
 #change this to somewhere on your computer that makes sense.
 
 
@@ -383,10 +386,10 @@ ggplot() +
   geom_sf(
     data = PFAS_ssn$obs,
     size = 2.5,
-    aes(color = TOC)) +
+    aes(color = "18O")) +
   coord_sf(datum = st_crs(obs)) +
   scale_color_viridis_c() +
-  labs(color = "TOC (mg/L)", linewidth = "WS Area") +
+  labs(color = "18O (per mill)", linewidth = "WS Area") +
   theme(
     legend.text = element_text(size = 8),
     legend.title = element_text(size = 10))
@@ -425,14 +428,14 @@ ssn_create_distmat(
   overwrite = TRUE)
 
 ggplot() +
-  geom_sf(data = catchment, color= "black", lwd = 1.5) +
+  geom_sf(data = catchment, color = "black", lwd = 1.5) +
   geom_sf(data = PFAS_pred$edges) +
-  geom_sf(data = PFAS_pred$obs, aes(color = TOC), size = 5) +
-  scale_color_viridis_c(limits = c(0, 6), option = "H") +
+  geom_sf(data = PFAS_pred$obs, aes(color = X18O), size = 5) +
+  scale_color_viridis_c(limits = c(-9, -1), option = "H") +
   theme_bw()
 
 Togregram <- Torgegram(
-  formula = TOC ~ npdesdensws + pctimp2019ws,
+  formula = X18O ~ bfiws + elevws + pcturbop2019ws,
   ssn.object = PFAS_pred,
   type = c("flowcon", "flowuncon", "euclid")
 )
@@ -445,10 +448,10 @@ all_cols <- names(PFAS_ssn$obs)
 #view(all_cols)
 # find the positions of the start and end columns 
 # that you want to make models for
-start <- match("TOC", all_cols)
-end   <- match("Sulfate", all_cols)
+start <- match("X2H", all_cols)
+end   <- match("X17O", all_cols)
 # subset the column names
-pfas_cols <- c("TOC","DOC", "UV254")
+pfas_cols <- c("X2H","X18O", "X17O")
 pfas_cols
 #now i'm looking at all PFAS compounds
 #so fun
@@ -467,7 +470,7 @@ for (compound in pfas_cols) {
   }
   
   # Fit model for each individual compound
-  form <- as.formula(paste0(compound, " ~ npdesdensws + pctimp2019ws"))
+  form <- as.formula(paste0(compound, " ~ bfiws + elevws + pcturbop2019ws"))
   models[[compound]] <- ssn_lm(
     formula = form,
     ssn.object = PFAS_ssn,
@@ -564,8 +567,8 @@ ggsave(filename = file.path(out_dir, "overview_map.png"), plot = p_overview,
 #--- forloop plots for all compounds------------------
 
 # fixed scale limits
-scale_min <- 1.5
-scale_max <- 6 #this is the maximum concentration predicted and observed. 
+scale_min <- -20
+scale_max <- 0 #this is the maximum concentration predicted and observed. 
 #edit the max if needed in future model creations
 
 # make sure obs_sf is an sf and matches edges CRS
@@ -585,7 +588,12 @@ for (compound in pfas_cols) {
   pred_col <- paste0(compound, "_pred")
   obs_col  <- compound
   
-  r2_val <- glance_df %>% # get R^2 or pseudo-R^2
+  # compute limits per compound from actual data (predictions + obs)
+  vals <- c(PFAS_pred$edges[[pred_col]], obs_sf[[obs_col]])
+  scale_min <- floor(min(vals, na.rm = TRUE))
+  scale_max <- ceiling(max(vals, na.rm = TRUE))
+  
+  r2_val <- glance_df %>%
     filter(compound == !!compound) %>%
     { if (nrow(.) == 0) NA_real_ else
       if ("pseudo.r.squared" %in% names(.)) .$pseudo.r.squared else
@@ -594,38 +602,25 @@ for (compound in pfas_cols) {
   
   p <- ggplot() +
     geom_sf(data = catchment, fill = NA, color = "black", size = 0.6) +
-    # predicted stream segments (continuous color)
-    geom_sf(data = PFAS_pred$edges,
-            aes(color = !!sym(pred_col)),
+    geom_sf(data = PFAS_pred$edges, aes(color = !!sym(pred_col)),
             linewidth = 1.5, show.legend = TRUE) +
-    # sample locations colored by observed values
-    geom_sf(data = obs_sf,
-            aes(color = !!sym(obs_col)),
-            shape = 21, fill = "white",
-            size = 2, stroke = 2.5,
-            inherit.aes = FALSE,
-            show.legend = FALSE) +
-    
-    #continuous colorbar for all plots
+    geom_sf(data = obs_sf, aes(color = !!sym(obs_col)),
+            shape = 21, fill = "white", size = 2, stroke = 2.5,
+            inherit.aes = FALSE, show.legend = FALSE) +
     scale_color_gradientn(
       colors = pal,
       limits = c(scale_min, scale_max),
       oob = scales::squish,
       na.value = "grey80",
-      name = "PFAS (ng/L)",
-      breaks = c(0, 1,2,3,4,5),
-      labels = scales::number_format(accuracy = 1.0),
-      trans = "sqrt") +
-    
+      name = paste0(compound, " (\u2030)"),
+      labels = scales::number_format(accuracy = 0.1)) +
     guides(color = guide_colorbar(
       barwidth  = grid::unit(0.6, "cm"),
       barheight = grid::unit(6, "cm"),
       label.theme = element_text(size = 12),
       title.theme = element_text(size = 13, face = "bold"),
-      title.position = "top" )) +
-    
+      title.position = "top")) +
     labs(title = paste("Predicted", compound), subtitle = r2_label) +
-    
     theme_classic() +
     theme(
       plot.title    = element_text(size = 18, face = "bold", hjust = 0.5),
@@ -637,11 +632,8 @@ for (compound in pfas_cols) {
       legend.position = "right",
       plot.margin = margin(t = 6, r = 6, b = 6, l = 6))
   
-  ggsave(
-    filename = file.path(out_dir, paste0(compound, "_map.png")),
-    plot = p,
-    width = 8, height = 6, dpi = 300
-  )
+  ggsave(filename = file.path(out_dir, paste0(compound, "_map.png")),
+         plot = p, width = 8, height = 6, dpi = 300)
 }
 
 p
@@ -717,11 +709,11 @@ ggplot(std_coef_df, aes(x = predictor, y = compound, fill = std_coef)) +
 
 #That's alot of models, so i'll make a heat map for only a few that would be interesting in talking about
 #want_comps are the compounds or families to put on the figure. 
-want_comps <- c("PFCA", "PFSA")
+want_comps <- c("X180", "X2H")
 
 # renaming the prediction labels for easier readibility
 pred_labels <- c(
-  npdesdensws   = "NDPES Density",
+  bfiws   = "Baseflow Index",
   pctimp2019ws  = "Percent Impervious")
 
 # preparing plotting set up
