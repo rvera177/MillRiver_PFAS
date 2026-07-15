@@ -92,7 +92,7 @@ cor_results_ws <- S1 %>%
 cor_long_ws <- melt(cor_results_ws)
 
 cor_results_Cat <- S1_Cat %>%
-  select("2H", "18O", "17O", connws, npdesdensws, pctimp2019ws, pcturbhi2019ws, pcturblo2019ws, pcturbmd2019ws, pcturbop2019ws, "rdcrsws","huden2010ws") %>% 
+  select("2H", "18O", "17O", conncat, npdesdenscat, pctimp2019cat, pcturbhi2019cat, pcturblo2019cat, pcturbmd2019cat, pcturbop2019cat, "rdcrscat","huden2010cat") %>% 
   cor(method = "spearman", use = "complete.obs")
 cor_long_cat <- melt(cor_results_Cat)
 
@@ -386,7 +386,7 @@ ggplot() +
   geom_sf(
     data = PFAS_ssn$obs,
     size = 2.5,
-    aes(color = "18O")) +
+    aes(color = X18O)) +
   coord_sf(datum = st_crs(obs)) +
   scale_color_viridis_c() +
   labs(color = "18O (per mill)", linewidth = "WS Area") +
