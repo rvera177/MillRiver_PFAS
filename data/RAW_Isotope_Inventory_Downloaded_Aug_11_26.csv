@@ -497,8 +497,8 @@
 496,Campus Pond Down,4/22/23,,4:05:00 PM,1,"TN, JB, CDG",Stream,13_sites,,,12/4/23,496,-45.528459,4.08E-01,-7.787244,7.20E-02,-4.009669,9.06E-02,
 497,Woodside,4/23/23,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,12/4/23,497,-15.037482,1.84E-01,-5.003786,4.34E-02,-2.587473,4.06E-02,
 498,Woodside,4/23/23,,11:59:00 PM,2,CDG,Precipitation,Precipitation,,,12/4/23,498,-14.682364,9.32E-01,-4.948984,1.50E-01,-2.557475,1.11E-01,4 2Hck
-499,Woodside,4/29-30/23,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,12/4/23,499,-38.09882,8.83E-01,-7.085007,1.11E-01,-3.674233,9.06E-02,4 2Hck
-500,Woodside,4/29-30/23,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,2/1/24,500,-45.985827,5.16E-01,-7.356049,6.24E-02,-4.253845,4.26E-02,1 fvol
+499,Woodside,4/29/23,4/30/23,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,12/4/23,499,-38.09882,8.83E-01,-7.085007,1.11E-01,-3.674233,9.06E-02,4 2Hck
+500,Woodside,4/29/23,4/30/23,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,2/1/24,500,-45.985827,5.16E-01,-7.356049,6.24E-02,-4.253845,4.26E-02,1 fvol
 501,Woodside,5/1/23,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,2/1/24,501,-68.969232,5.39E-01,-11.171133,7.63E-02,-5.910963,6.67E-02,1 svol
 502,Woodside,5/2/23,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,2/1/24,502,-125.692383,5.04E-01,-16.97404,7.23E-02,-8.805632,5.68E-02,
 503,Woodside,5/20/23,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,2/1/24,503,-18.369641,5.71E-01,-3.450212,5.09E-02,-1.961204,8.95E-02,1 fvol
@@ -765,8 +765,8 @@
 764,NYC,6/8/22,,3:00:00 PM,2,KS,Precipitation,Precipitation,,,3/5/24,764,-78.060695,3.81E-01,-9.749676,2.51E-02,-5.350413,2.39E-02,fvol
 765,NYC,6/11/22,,1:00:00 PM,1,KS,Precipitation,Precipitation,,,3/5/24,765,-78.396494,8.38E-01,-9.806608,9.36E-02,-5.38748,7.10E-02,"fvol, 3 2Hck"
 766,NYC,6/11/22,,1:00:00 PM,2,KS,Precipitation,Precipitation,,,3/5/24,766,-78.141631,3.02E-01,-9.795222,4.59E-02,-5.386875,4.79E-02,
-767,NYC,6/9/22-6/10/22,,-,1,KS,Precipitation,Precipitation,,,3/5/24,767,-84.400413,3.72E-01,-10.690678,9.59E-02,-5.860086,4.10E-02,
-768,NYC,6/9/22-6/10/22,,-,2,KS,Precipitation,Precipitation,,,3/5/24,768,-84.232513,1.66E-01,-10.63212,2.02E-02,-5.802672,3.53E-02,
+767,NYC,6/9/22,6/10/22,-,1,KS,Precipitation,Precipitation,,,3/5/24,767,-84.400413,3.72E-01,-10.690678,9.59E-02,-5.860086,4.10E-02,
+768,NYC,6/9/22,6/10/22,-,2,KS,Precipitation,Precipitation,,,3/5/24,768,-84.232513,1.66E-01,-10.63212,2.02E-02,-5.802672,3.53E-02,
 769,Roaring,2/24/24,,8:36:00 AM,1,"TN, TH, BD",Stream,13_sites,,,3/5/24,769,-76.120378,5.98E-01,-9.507309,8.80E-02,-5.236995,1.88E-02,
 770,Doolittle,2/24/24,,8:51:00 AM,1,"TN, TH, BD",Stream,13_sites,,,3/5/24,770,-73.368115,0.00E+00,-8.892445,0.00E+00,-4.969266,0.00E+00,3 fvol
 771,Eastman Up,2/24/24,,9:17:00 AM,1,"TN, TH, BD",Stream,13_sites,,,3/5/24,771,-72.85925,7.57E-01,-8.733849,6.70E-02,-4.876195,1.54E-01,2 fvol
@@ -1128,16 +1128,16 @@
 1127,Woodside,4/12/24,,8:00:00 AM,2,CDG,Precipitation,Precipitation,,,10/18/24,1127,-4.44905,5.31E-01,-2.386548,8.84E-02,-1.059843,6.22E-02,
 1128,Woodside,4/12/24,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,10/18/24,1128,-30.099167,3.12E-01,-3.815452,3.74E-02,-1.971032,4.46E-02,
 1129,Woodside,4/12/24,,11:59:00 PM,2,CDG,Precipitation,Precipitation,,,10/18/24,1129,-30.647364,2.73E-01,-3.805335,5.78E-02,-1.994336,4.82E-02,
-1130,Woodside,4/28 - 5/15/24,,12:00:00 PM,1,CDG,Precipitation,Precipitation,,,10/18/24,1130,-24.426188,5.32E-01,-4.81873,6.95E-02,-2.414052,6.15E-02,
-1131,Woodside,4/28 - 5/15/24,,12:00:00 PM,2,CDG,Precipitation,Precipitation,,,10/18/24,1131,-24.460563,3.47E-01,-4.79072,7.69E-02,-2.315274,9.70E-02,
+1130,Woodside,4/28/24,5/15/24,12:00:00 PM,1,CDG,Precipitation,Precipitation,,,10/18/24,1130,-24.426188,5.32E-01,-4.81873,6.95E-02,-2.414052,6.15E-02,
+1131,Woodside,4/28/24,5/15/24,12:00:00 PM,2,CDG,Precipitation,Precipitation,,,10/18/24,1131,-24.460563,3.47E-01,-4.79072,7.69E-02,-2.315274,9.70E-02,
 1132,Woodside,5/16/24,,5:00:00 PM,1,CDG,Precipitation,Precipitation,,,10/18/24,1132,-59.130154,2.77E-01,-9.096967,4.95E-02,-4.550521,1.84E-02,
 1133,Woodside,5/16/24,,5:00:00 PM,2,CDG,Precipitation,Precipitation,,,10/18/24,1133,-59.453486,6.67E-01,-9.13252,7.78E-02,-4.615555,7.39E-02,
-1134,Woodside,5/19 - 5/30/24,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,10/18/24,1134,-9.996504,5.58E-01,-2.799511,5.63E-02,-1.111283,8.81E-02,
-1135,Woodside,5/19 - 5/30/24,,11:59:00 PM,2,CDG,Precipitation,Precipitation,,,10/24/24,1135,-11.068148,1.70E-01,-2.114433,4.83E-02,-2.002299,4.39E-02,
-1136,Woodside,6/6 - 6/8/24,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,10/24/24,1136,-70.339024,5.26E-01,-9.64269,6.59E-02,-6.145713,5.28E-02,
-1137,Woodside,6/6 - 6/8/24,,11:59:00 PM,2,CDG,Precipitation,Precipitation,,,10/24/24,1137,-70.897988,1.49E-01,-9.684828,1.01E-02,-6.061705,3.84E-02,
-1138,Woodside,6/6 - 6/8/24,,11:59:00 PM,3,CDG,Precipitation,Precipitation,,,10/24/24,1138,-70.889615,4.98E-01,-9.689235,6.34E-02,-5.969016,4.86E-02,
-1139,Woodside,6/6 - 6/8/24,,11:59:00 PM,4,CDG,Precipitation,Precipitation,,,10/24/24,1139,-70.393821,2.93E-01,-9.722376,7.27E-02,-5.770876,4.72E-02,
+1134,Woodside,5/19/24,5/30/24,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,10/18/24,1134,-9.996504,5.58E-01,-2.799511,5.63E-02,-1.111283,8.81E-02,
+1135,Woodside,5/19/24,5/30/24,11:59:00 PM,2,CDG,Precipitation,Precipitation,,,10/24/24,1135,-11.068148,1.70E-01,-2.114433,4.83E-02,-2.002299,4.39E-02,
+1136,Woodside,6/6/24,6/8/24,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,10/24/24,1136,-70.339024,5.26E-01,-9.64269,6.59E-02,-6.145713,5.28E-02,
+1137,Woodside,6/6/24,6/8/24,11:59:00 PM,2,CDG,Precipitation,Precipitation,,,10/24/24,1137,-70.897988,1.49E-01,-9.684828,1.01E-02,-6.061705,3.84E-02,
+1138,Woodside,6/6/24,6/8/24,11:59:00 PM,3,CDG,Precipitation,Precipitation,,,10/24/24,1138,-70.889615,4.98E-01,-9.689235,6.34E-02,-5.969016,4.86E-02,
+1139,Woodside,6/6/24,6/8/24,11:59:00 PM,4,CDG,Precipitation,Precipitation,,,10/24/24,1139,-70.393821,2.93E-01,-9.722376,7.27E-02,-5.770876,4.72E-02,
 1140,Woodside,6/14/24,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,10/24/24,1140,-22.967406,1.58E-01,-3.800775,3.37E-02,-2.415033,4.76E-02,
 1141,Woodside,6/14/24,,11:59:00 PM,2,CDG,Precipitation,Precipitation,,,10/24/24,1141,-23.066589,2.20E-01,-3.843547,8.89E-02,-2.282003,3.16E-02,
 1142,Woodside,6/19/24,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,10/24/24,1142,-9.992216,3.93E-01,-2.284945,7.97E-02,-1.267258,6.71E-02,
@@ -1153,10 +1153,10 @@
 1152,Woodside,6/26/24,,11:59:00 PM,2,CDG,Precipitation,Precipitation,,,10/29/24,1152,-29.929651,5.43E-01,-3.982592,9.39E-02,-1.911402,1.38E-02,
 1153,Woodside,6/30/24,,11:59:00 PM,1,CDG,Precipitation,Precipitation,,,10/29/24,1153,-25.42376,3.80E-01,-5.299426,2.10E-02,-2.615432,3.32E-02,
 1154,Woodside,6/30/24,,11:59:00 PM,2,CDG,Precipitation,Precipitation,,,10/29/24,1154,-25.515406,8.99E-02,-5.305016,4.37E-02,-2.680338,5.80E-02,
-1155,Wet Center,7/5-7/24,,11:59:00 PM,1,"RC, RV, MN",Precipitation,Precipitation,Rain event between 7/5 and 7/7. Collected on 7/8,,10/29/24,1155,-22.48482,1.54E-01,-4.665884,7.90E-02,-2.388106,3.70E-02,
-1156,Wet Center,7/5-7/24,,11:59:00 PM,2,"RC, RV, MN",Precipitation,Precipitation,,,10/29/24,1156,-22.617733,2.21E-01,-4.666887,7.30E-02,-2.362416,1.85E-02,
-1157,Wet Center,7/5-7/24,,11:59:00 PM,3,"RC, RV, MN",Precipitation,Precipitation,,,10/29/24,1157,-22.351153,1.79E-01,-4.705475,3.71E-02,-2.411243,2.41E-02,
-1158,Wet Center,7/5-7/24,,11:59:00 PM,4,"RC, RV, MN",Precipitation,Precipitation,,,10/29/24,1158,-22.383152,4.59E-01,-4.639639,1.07E-01,-2.340011,4.76E-03,
+1155,Wet Center,7/5/24,7/7/24,11:59:00 PM,1,"RC, RV, MN",Precipitation,Precipitation,Rain event between 7/5 and 7/7. Collected on 7/8,,10/29/24,1155,-22.48482,1.54E-01,-4.665884,7.90E-02,-2.388106,3.70E-02,
+1156,Wet Center,7/5/24,7/7/24,11:59:00 PM,2,"RC, RV, MN",Precipitation,Precipitation,,,10/29/24,1156,-22.617733,2.21E-01,-4.666887,7.30E-02,-2.362416,1.85E-02,
+1157,Wet Center,7/5/24,7/7/24,11:59:00 PM,3,"RC, RV, MN",Precipitation,Precipitation,,,10/29/24,1157,-22.351153,1.79E-01,-4.705475,3.71E-02,-2.411243,2.41E-02,
+1158,Wet Center,7/5/24,7/7/24,11:59:00 PM,4,"RC, RV, MN",Precipitation,Precipitation,,,10/29/24,1158,-22.383152,4.59E-01,-4.639639,1.07E-01,-2.340011,4.76E-03,
 1159,Wet Center,7/8/24,,9:59:00 AM,1,"RC, RV, MN",Stream,3_sites,3 site field sampling,,10/29/24,1159,-45.127623,2.45E-01,-7.551466,1.01E-01,-3.908369,3.45E-02,
 1160,Wet Center,7/8/24,,9:59:00 AM,2,"RC, RV, MN",Stream,3_sites,,,10/29/24,1160,-45.039716,4.99E-01,-7.5508,6.91E-02,-3.814146,1.86E-02,
 1161,NOHO Mill River,7/8/24,,10:55:00 AM,1,"RC, RV, MN",Stream,3_sites,,,10/29/24,1161,-45.188482,7.84E-01,-7.627782,1.16E-01,-3.824488,5.64E-02,
@@ -1165,11 +1165,11 @@
 1164,Groff Park,7/8/24,,11:39:00 AM,2,"RC, RV, MN",Stream,3_sites,,,10/29/24,1164,-41.849088,6.11E-01,-7.208888,8.00E-02,-3.642878,8.45E-02,
 1165,Wet Center,7/9/24,,12:05:00 PM,1,"RC, RV",Stream,Other,"ISCO sample bottle #1 ONLY as the storm did not happen, only recieved 0.06 in which occured before the ISCO was turned on",,10/29/24,1165,-46.725491,5.14E-01,-7.666443,6.48E-02,-3.883989,6.24E-02,
 1166,Wet Center,7/9/24,,12:05:00 PM,2,"RC, RV",Stream,Other,,,10/29/24,1166,-46.17223,6.38E-01,-7.631063,9.02E-02,-3.933234,7.51E-02,
-1167,Woodside,7/5-7/24,,11:55:00 PM,1,CDG,Precipitation,Precipitation,Rain event between 7/5 and 7/7. Placed in inventory on 7/11/24.,,10/31/24,1167,-20.733286,2.23E-01,-4.5513,4.06E-02,-2.135021,4.95E-02,
-1168,Woodside,7/5-7/24,,11:55:00 PM,2,CDG,Precipitation,Precipitation,,,10/31/24,1168,-19.505261,7.28E-01,-4.502864,8.75E-02,-2.122245,2.60E-02,
-1169,Woodside,7/5-7/24,,11:55:00 PM,3,CDG,Precipitation,Precipitation,,,10/31/24,1169,-20.750305,3.82E-01,-4.577487,1.33E-01,-2.144122,3.74E-02,
-1170,Woodside,7/5-7/24,,11:55:00 PM,4,CDG,Precipitation,Precipitation,,,10/31/24,1170,-21.011019,1.37E-01,-4.470974,8.05E-02,-2.1457,3.93E-02,
-1171,Wet Center,7/12-14/24,,11:59:00 PM,1,RV,Precipitation,Precipitation,,,10/31/24,1171,-19.649961,6.74E-01,-3.800852,8.54E-02,-1.848273,8.83E-02,
+1167,Woodside,7/5/24,7/7/24,11:55:00 PM,1,CDG,Precipitation,Precipitation,Rain event between 7/5 and 7/7. Placed in inventory on 7/11/24.,,10/31/24,1167,-20.733286,2.23E-01,-4.5513,4.06E-02,-2.135021,4.95E-02,
+1168,Woodside,7/5/24,7/7/24,11:55:00 PM,2,CDG,Precipitation,Precipitation,,,10/31/24,1168,-19.505261,7.28E-01,-4.502864,8.75E-02,-2.122245,2.60E-02,
+1169,Woodside,7/5/24,7/7/24,11:55:00 PM,3,CDG,Precipitation,Precipitation,,,10/31/24,1169,-20.750305,3.82E-01,-4.577487,1.33E-01,-2.144122,3.74E-02,
+1170,Woodside,7/5/24,7/7/24,11:55:00 PM,4,CDG,Precipitation,Precipitation,,,10/31/24,1170,-21.011019,1.37E-01,-4.470974,8.05E-02,-2.1457,3.93E-02,
+1171,Wet Center,7/12/24,7/14/24,11:59:00 PM,1,RV,Precipitation,Precipitation,,,10/31/24,1171,-19.649961,6.74E-01,-3.800852,8.54E-02,-1.848273,8.83E-02,
 1172,Wet Center,7/12/24,,1:25:00 PM,1,RV,Stream,Stream_Storm,"Storm 5, Sample 1",,10/31/24,1172,-47.567545,1.13E+00,-7.799063,1.45E-01,-4.014353,1.00E-01,3 2Hck
 1173,Wet Center,7/12/24,,4:25:00 PM,1,RV,Stream,Stream_Storm,"Storm 5, Sample 2",,10/31/24,1173,-47.55526,7.98E-01,-7.835536,8.97E-02,-3.975172,4.07E-02,
 1174,Wet Center,7/12/24,,7:25:00 PM,1,RV,Stream,Stream_Storm,"Storm 5, Sample 3",,10/31/24,1174,-48.227194,9.45E-01,-7.944008,1.25E-01,-4.068626,7.10E-02,3 2Hck
@@ -1194,10 +1194,10 @@
 1193,Wet Center,7/15/24,,4:25:00 AM,1,RV,Stream,Stream_Storm,22: No issue,,11/07/24,1193,-46.196966,4.72E-01,-7.448597,3.53E-02,-3.995428,2.26E-02,
 1194,Wet Center,7/15/24,,7:25:00 AM,1,RV,Stream,Stream_Storm,23: No issue,,11/07/24,1194,-46.947562,1.90E-01,-7.54251,4.14E-02,-4.191869,2.09E-02,
 1195,Wet Center,7/15/24,,10:25:00 AM,1,RV,Stream,Stream_Storm,24: No issue,,11/07/24,1195,-46.791017,3.72E-01,-7.532432,6.30E-02,-4.170997,4.22E-02,
-1196,Wet Center,7/12-14/24,,11:59:00 PM,1,"RV, MN",Precipitation,Precipitation,,,11/07/24,1196,-29.675673,1.43E-01,-4.734833,5.20E-02,-2.507172,4.21E-02,
-1197,Wet Center,7/12-15/24,,11:59:00 PM,1,"RV, MN",Precipitation,Precipitation,,,11/07/24,1197,-29.693706,2.72E-01,-4.680357,5.48E-02,-2.461132,2.15E-02,
-1198,Wet Center,7/12-15/24,,11:59:00 PM,1,"RV, MN",Precipitation,Precipitation,,,11/07/24,1198,-30.613182,6.00E-01,-4.974678,5.63E-02,-2.095105,4.89E-02,
-1199,Wet Center,7/12-15/24,,11:59:00 PM,1,"RV, MN",Precipitation,Precipitation,,,11/07/24,1199,-30.07856,5.25E-01,-4.949664,6.45E-02,-2.158598,5.54E-02,
+1196,Wet Center,7/12/24,7/14/24,11:59:00 PM,1,"RV, MN",Precipitation,Precipitation,,,11/07/24,1196,-29.675673,1.43E-01,-4.734833,5.20E-02,-2.507172,4.21E-02,
+1197,Wet Center,7/12/24,7/15/24,11:59:00 PM,1,"RV, MN",Precipitation,Precipitation,,,11/07/24,1197,-29.693706,2.72E-01,-4.680357,5.48E-02,-2.461132,2.15E-02,
+1198,Wet Center,7/12/24,7/15/24,11:59:00 PM,1,"RV, MN",Precipitation,Precipitation,,,11/07/24,1198,-30.613182,6.00E-01,-4.974678,5.63E-02,-2.095105,4.89E-02,
+1199,Wet Center,7/12/24,7/15/24,11:59:00 PM,1,"RV, MN",Precipitation,Precipitation,,,11/07/24,1199,-30.07856,5.25E-01,-4.949664,6.45E-02,-2.158598,5.54E-02,
 1200,Fearing 1,7/18/24,,,1,,Stream,Other,,,7/19/2024,1200,-45.494698,3.63E-01,-7.201368,7.58E-02,-4.025425,2.77E-02,
 1201,Fearing 2,7/18/24,,,1,,Stream,Other,,,7/19/2024,1201,-45.94445,9.02E-01,-7.309386,1.16E-01,-4.130859,6.04E-02,5 2Hck
 1202,Fearing 3,7/18/24,,,1,,Stream,Other,,,7/19/2024,1202,-47.540846,4.32E-01,-7.732943,3.90E-02,-3.407796,2.61E-02,1 fvol
@@ -1347,8 +1347,8 @@
 1346,Wet Center,8/26/24,,,1,"RV, RC",Stream,Isoscape,19,,9/6/24,1346,-49.519645,5.00E-01,-7.915434,8.73E-02,-4.120341,5.83E-02,
 1347,TBD Downstream,8/26/24,,,1,"RV, RC",Stream,Isoscape,20,,9/6/24,1347,-49.137806,2.32E-01,-7.734322,5.76E-02,-3.97129,2.66E-02,
 1348,TBD Upstream,8/26/24,,,1,"RV, RC",Stream,Isoscape,21,,9/6/24,1348,-48.665925,5.73E-01,-7.429022,7.41E-02,-3.820573,7.36E-02,
-1349,Wet Center,8/20 - 9/11/24,,11:59:00 PM,1,"RV, RC",Precipitation,Precipitation_Composite,Received 157mL = ~0.43 inches between 8/20 - 9/11/24 (retrieved at 1:40 pm on 9/12). Composite set of precip from multiple storms,,11/20/25,1349,-21.478076,1.70E+00,-5.149385,1.82E-01,-2.855931,1.24E-01,
-1350,Wet Center,8/20 - 9/11/24,,11:59:00 PM,2,"RV, RC",Precipitation,Precipitation_Composite,,,6/22/26,1350,-20.040037,1.54E+00,-5.477869,2.04E-01,-2.737076,9.79E-02,
+1349,Wet Center,8/20/24,9/11/24,11:59:00 PM,1,"RV, RC",Precipitation,Precipitation_Composite,Received 157mL = ~0.43 inches between 8/20 - 9/11/24 (retrieved at 1:40 pm on 9/12). Composite set of precip from multiple storms,,11/20/25,1349,-21.478076,1.70E+00,-5.149385,1.82E-01,-2.855931,1.24E-01,
+1350,Wet Center,8/20/24,9/11/24,11:59:00 PM,2,"RV, RC",Precipitation,Precipitation_Composite,,,6/22/26,1350,-20.040037,1.54E+00,-5.477869,2.04E-01,-2.737076,9.79E-02,
 1351,Roaring,9/22/24,,9:22:00 AM,1,"TN, RV, RC, ZW",Stream,13_sites,It has not rained a significant amount in a long time,,6/22/26,1351,-49.971975,1.14E+00,-8.606597,2.49E-01,-4.254121,1.23E-01,Vial broke
 1352,Doolittle,9/22/24,,9:33:00 AM,1,"TN, RV, RC, ZW",Stream,13_sites,,,6/22/26,1352,-33.428074,4.15E-01,-8.042798,1.30E-01,-4.026765,4.73E-02,Vial broke
 1353,Eastman Up,9/22/24,,10:20:00 AM,1,"TN, RV, RC, ZW",Stream,13_sites,,,4/24/25,1353,-45.670945,7.86E-01,-7.223322,7.01E-02,-3.765392,8.96E-02,
@@ -1409,8 +1409,8 @@
 1408,NOHO Mill River,10/4/24,,5:32:00 PM,2,"EW, XG, AH",Stream,3_sites,,,05/23/25,1408,-44.840523,2.24E+00,-7.640269,3.00E-01,-3.946699,1.89E-01,
 1409,Groff Park,10/4/24,,6:17:00 PM,1,"EW, XG, AH",Stream,3_sites,,,05/23/25,1409,-40.849632,1.32E+00,-7.005045,1.87E-01,-3.578589,1.45E-01,
 1410,Groff Park,10/4/24,,6:17:00 PM,2,"EW, XG, AH",Stream,3_sites,,,05/23/25,1410,-42.589634,1.42E-01,-7.124874,1.00E-02,-3.615806,6.05E-04,
-1411,Wet Center,10/13 - 10/14/24,,11:59:00 PM,1,RV,Precipitation,Precipitation,Received 190mL = ~0.52 inches between 10/13 - 10/14 (retrieved at 2:00 pm on 10/17),,05/23/25,1411,-19.264092,1.81E+00,-4.992936,1.45E-01,-2.549828,1.01E-01,
-1412,Wet Center,10/13 - 10/14/24,,11:59:00 PM,2,RV,Precipitation,Precipitation,,,05/23/25,1412,-17.464946,7.57E-01,-5.102057,1.39E-01,-2.683422,4.09E-02,
+1411,Wet Center,10/13/14,10/14/24,11:59:00 PM,1,RV,Precipitation,Precipitation,Received 190mL = ~0.52 inches between 10/13 - 10/14 (retrieved at 2:00 pm on 10/17),,05/23/25,1411,-19.264092,1.81E+00,-4.992936,1.45E-01,-2.549828,1.01E-01,
+1412,Wet Center,10/13/14,10/14/24,11:59:00 PM,2,RV,Precipitation,Precipitation,,,05/23/25,1412,-17.464946,7.57E-01,-5.102057,1.39E-01,-2.683422,4.09E-02,
 1413,Roaring,10/19/24,,11:20:00 AM,1,"TN, RV, RC, EW, XG, KH",Stream,13_sites,,,05/23/25,1413,-47.433729,6.35E-01,-8.046184,1.24E-01,-4.265468,6.94E-02,
 1414,Doolittle,10/19/24,,11:37:00 AM,1,"TN, RV, RC, EW, XG, KH",Stream,13_sites,,,05/23/25,1414,-43.497221,4.45E-01,-7.474465,5.35E-02,-4.039614,3.16E-02,
 1415,Eastman Up,10/19/24,,12:02:00 PM,1,"TN, RV, RC, EW, XG, KH",Stream,13_sites,,,05/23/25,1415,-35.660902,1.16E+00,-5.812191,1.93E-01,-3.242921,1.38E-01,
@@ -1659,10 +1659,10 @@
 1658,Wet Center,2/28/25,,11:15:00 AM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 18,,05/01/25,1658,-1.843031,3.03E-01,-2.874824,2.80E-02,-1.091138,3.08E-02,
 1659,Wet Center,2/28/25,,3:15:00 PM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 19,,05/01/25,1659,-60.985336,3.94E-01,-9.420402,3.78E-02,-4.783111,7.77E-02,
 1660,Wet Center,2/28/25,,7:15:00 PM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 20,,05/01/25,1660,-60.945019,5.87E-01,-9.432242,5.01E-02,-4.83016,5.66E-02,
-1661,Wet Center,2/28/25,,11:15:00 PM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 21,,05/01/25,1661,-59.686866,3.34E-01,-9.354172,4.82E-02,-4.840955,3.10E-02,
-1662,Wet Center,2/29/25,,3:15:00 AM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 22,,05/01/25,1662,-59.071901,2.76E-01,-9.296057,5.65E-02,-4.855317,7.20E-02,
-1663,Wet Center,2/29/25,,7:15:00 AM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 23,,05/01/25,1663,-58.335701,4.62E-01,-9.209907,6.95E-02,-4.882531,2.74E-02,
-1664,Wet Center,2/29/25,,11:15:00 AM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 24,,05/01/25,1664,-58.798777,4.60E-01,-9.322295,9.80E-02,-4.898188,1.05E-02,
+1661,Wet Center,3/1/25,,11:15:00 PM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 21,,05/01/25,1661,-59.686866,3.34E-01,-9.354172,4.82E-02,-4.840955,3.10E-02,
+1662,Wet Center,3/1/25,,3:15:00 AM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 22,,05/01/25,1662,-59.071901,2.76E-01,-9.296057,5.65E-02,-4.855317,7.20E-02,
+1663,Wet Center,3/1/25,,7:15:00 AM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 23,,05/01/25,1663,-58.335701,4.62E-01,-9.209907,6.95E-02,-4.882531,2.74E-02,
+1664,Wet Center,3/1/25,,11:15:00 AM,1,"TN, KH, EW",Stream,Stream_Storm,Stream_Storm9: Sample 24,,05/01/25,1664,-58.798777,4.60E-01,-9.322295,9.80E-02,-4.898188,1.05E-02,
 1665,Wet Center,3/6/25,,4:30:00 PM,1,"KH,XG",Precipitation,Precipitation,missing metal tip ,,05/01/25,1665,-60.744379,4.96E-01,-9.469528,8.11E-02,-4.925628,6.13E-02,
 1666,Wet Center,3/6/25,,4:30:00 PM,1,"KH,XG",Precipitation,Precipitation,"Croatia, metal tip was put back on ",,05/01/25,1666,-60.921159,4.76E-01,-9.494622,7.08E-02,-5.050535,5.72E-02,
 1667,Roaring,3/8/25,,,1,"TN,CG",Stream,13_Sites,,,05/01/25,1667,-59.375911,2.39E-01,-9.368458,4.53E-02,-4.990442,4.44E-02,
