@@ -128,6 +128,7 @@ covariate_registry <- list(
     resample_method = "bilinear",
     out_name = "nlcd_imp2019"),
   # 2025 NLCD Cultivated Crops (class 81): Areas used for production of annual crops 
+  # Data source: https://www.usgs.gov/centers/eros/science/annual-nlcd-land-cover-classification 
   # (corn, soybeans) and perennial woody crops (orchards). Crop vegetation > 20%.
   nlcd_cultivated_crops_2025 = list(
     path = "../data/raster/Annual_NLCD_LndCov_2025_CU_C1V2/Annual_NLCD_LndCov_2025_CU_C1V2.tif",
@@ -156,9 +157,17 @@ covariate_registry <- list(
   npdes = list(
     path = "../data/shp/USEPA_NPDES_pts.shp",
     type = "point_density",
-    out_name = "npdes")
+    out_name = "npdes"),
+  # Baseflow Index (BFI): 1km resolution, interpolated from USGS streamgages
+  # Represents base flow component of streamflow from ground-water discharge
+  # link to source: https://www.sciencebase.gov/catalog/item/631405c5d34e36012efa3192
+  # actual raster data is in the pfi48grd.zip file
+  bfi = list(
+    path = "../data/raster/BaseFlowIndex_USGS_48grd/bfi48grd/w001001.adf",
+    type = "continuous",
+    resample_method = "bilinear",
+    out_name = "bfi")
 )
-
 # ---- 4. Pre-align all registered rasters / load all point layers -----------
 
 aligned_rasters <- list()
@@ -252,7 +261,7 @@ results <- do.call(rbind, results_list) |>
 summary(results)
 
 write_csv(results, "../data/RVsummary_basin_covariates.csv")
-#saveRDS(results, "../data/summary_basin_covariates.rds")
+saveRDS(results, "../data/RVsummary_basin_covariates.rds")
 
 
 # ---- 7. RCA-side: shared cell count -----------------------------------------
@@ -305,7 +314,7 @@ for (nm in names(covariate_registry)) {
 summary(rca_results)
 
 write_csv(rca_results, "../data/RVsummary_RCA_covariates.csv")
-#saveRDS(rca_results, "../data/summary_RCA_covariates.rds")
+saveRDS(rca_results, "../data/RVsummary_RCA_covariates.rds")
 
 
 # ---- 9. Visualize -----------------------------------------------------------
@@ -323,3 +332,81 @@ rca_results |>
   geom_violin() +
   scale_y_log10() +
   facet_wrap(~covariate, scales = "free", nrow = 1)
+
+
+# ---- 10. Visualization: Spatial distribution of predictors ----------------
+library(tmap)
+library(RColorBrewer)
+
+# Convert reach/basin boundaries to spatial for mapping
+final_pour_points_sf <- final_pour_points
+
+reach_rca_sf <- as.polygons(reach_rca_r) |> st_as_sf()
+
+basin_boundaries <- lapply(reach_basins, as.polygons) |> 
+  lapply(st_as_sf) |> 
+  bind_rows()
+
+# Plot 1: Raw BFI raster with reach boundaries
+tm_shape(aligned_rasters[["bfi"]]) + 
+  tm_raster(title = "Base Flow Index", palette = "Blues") +
+  tm_shape(reach_rca_sf) + 
+  tm_borders(col = "red", lwd = 2) +
+  tm_layout(title = "BFI Distribution across Reaches", frame = TRUE)
+
+# Plot 2: Raw NLCD Planted/Cultivated with reach boundaries
+tm_shape(aligned_rasters[["nlcd_planted_cultivated_2025"]]) + 
+  tm_raster(title = "Planted/Cultivated (1=Yes, NA=No)", palette = "Greens") +
+  tm_shape(reach_rca_sf) + 
+  tm_borders(col = "red", lwd = 2) +
+  tm_layout(title = "Planted/Cultivated Land across Reaches", frame = TRUE)
+
+# Rename the raster value column to reach_id for joining
+reach_rca_sf <- reach_rca_sf |>
+  rename(reach_id = final_pour_point_RCAs)
+
+
+rca_results_sf <- left_join(reach_rca_sf, rca_results, by = "reach_id")
+
+# Plot 3: Choropleth of summarized BFI by reach (blue)
+tm_shape(rca_results_sf) + 
+  tm_fill("bfi_rca", col.legend = tm_legend(title = "Mean BFI"), col.scale = tm_scale_continuous(values = "brewer.blues")) +
+  tm_borders() +
+  tm_title("BFI: Reach-scale Summary")
+
+# Plot 4: Choropleth of % Planted/Cultivated by reach (orange for farmland)
+tm_shape(rca_results_sf) + 
+  tm_fill("pct_nlcd_planted_cultivated_2025_rca", 
+          palette = "Oranges",
+          title = "% Planted/Cultivated") +
+  tm_borders() +
+  tm_title("Planted/Cultivated: Reach-scale Summary (%)")
+
+# Plot 5: Choropleth of % NLCD Impervious 2025 by reach
+tm_shape(rca_results_sf) + 
+  tm_fill("nlcd_imp2025_rca", 
+          palette = "Purples",
+          title = "% Impervious") +
+  tm_borders() +
+  tm_title("NLCD Impervious 2025: Reach-scale Summary (%)")
+
+
+basin_summary_sf <- lapply(seq_len(nlyr(basin_stack)), function(i) {
+  basin_sf <- as.polygons(basin_stack[[i]]) |> st_as_sf()
+  basin_sf <- basin_sf |> 
+    select(geometry) |>  # keep only geometry, drop inconsistent raster value columns
+    mutate(reach_id = results$reach_id[i])
+  basin_sf
+}) |> 
+  bind_rows()
+
+# Now join with results
+basin_summary_sf <- left_join(basin_summary_sf, results, by = "reach_id")
+
+# Plot: Choropleth for basin-scale planted/cultivated
+tm_shape(basin_summary_sf) + 
+  tm_fill("pct_nlcd_planted_cultivated_2025_bas", 
+          palette = "Oranges",
+          title = "% Planted/Cultivated") +
+  tm_borders() +
+  tm_title("Planted/Cultivated: Basin-scale Summary (%)")
