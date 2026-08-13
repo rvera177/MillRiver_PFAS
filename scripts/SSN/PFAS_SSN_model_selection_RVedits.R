@@ -293,6 +293,7 @@ parallel::clusterEvalQ(cl, library("SSN2")) # make sure the SSN2 library is load
 
 # run parallel loop and save results into the following data frame
 # i = 1; j = 100  # for testing the loop
+t0 <- Sys.time()
 PFAS_ssn_fits <- 
   foreach(i = 1:length(key_compounds),.combine = 'rbind') %dopar% {  
     
